@@ -1,127 +1,224 @@
 package application;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BackgroundImage;
+import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
+import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
 public class Main extends Application {
-	// store any command-line arguments that were entered.
-	// NOTE: this.getParameters().getRaw() will get these also
-	private List<String> args;
-
-	private static final int WINDOW_WIDTH = 1000;
-	private static final int WINDOW_HEIGHT = 800;
-	private static final int CIRCLE_RADIUS = 30;
-	private static final String APP_TITLE = "Pawstagram";
-
-	@Override
-	public void start(Stage primaryStage) throws Exception {
-		// save args example
-		args = this.getParameters().getRaw();
-
-		// Create a vertical box with Hello labels for each args
-		VBox vbox = new VBox();
-		
-		// Creates a canvas that can draw shapes and text
-		Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		// Write some text
-		// Text is filled with the fill color
-		gc.setFill(Color.BLUE);
-		gc.setFont(new Font(40));
-		gc.fillText("Pawstagram", 425, 40);
-		gc.setFill(Color.ORANGE);
-		gc.fillText("Pawstagram", 427, 42);
-
-		gc.setStroke(Color.BLACK);
-		gc.setLineWidth(1);
-		gc.strokeLine(0, 65, WINDOW_WIDTH, 65);
-		gc.strokeLine(0, 66, WINDOW_WIDTH, 66);
-		
-		gc.setFill(Color.BLACK);
-		gc.setFont(new Font(20));
-		gc.fillText("McKenna's Social Network", 390, 90);
-		gc.strokeLine(0, 105, WINDOW_WIDTH, 105);
-		gc.strokeLine(0, 106, WINDOW_WIDTH, 106);
-		
-		// Main box:
-		gc.strokeLine(50, 115, 700, 115); // Top of box
-		gc.strokeLine(50, 115, 50, 615);  // Left of box
-		gc.strokeLine(700, 115, 700, 615);  // Right of box
-		gc.strokeLine(50, 615, 700, 615); // Bottom of box
-		
-		gc.strokeRect(51, 116, 651, 501);
-		
-		// Side box:
-		gc.strokeLine(710, 115, 985, 115); // Top of box
-		gc.strokeLine(710, 115, 710, 715);  // Left of box
-		gc.strokeLine(985, 115, 985, 715);  // Right of box
-		gc.strokeLine(710, 715, 985, 715); // Bottom of box
-		
-		// Bottom box:
-		gc.strokeLine(100, 700, 670, 700); // Top of box
-		gc.strokeLine(100, 700, 100, 750);  // Left of box
-		gc.strokeLine(670, 700, 670, 750);  // Right of box
-
-		// Bottom:
-		gc.strokeLine(0, 750, WINDOW_WIDTH, 750); 
-		gc.setFont(new Font(15));
-		gc.fillText("An A10 Production * GitHub Repo", 390, 780);
-		
-		gc.drawImage(new Image("https://uploads.dailydot.com/2018/03/Dog-Phone.jpg",200,180,true,false), 750, 600);
-		
-		// Draw a few circles
-		gc.setFill(Color.BLACK);
-		// The circles draw from the top left, so to center them, subtract the radius from each coordinate
-		drawCircle(300,300,gc,"Laura");
-		drawCircle(400,400,gc,"McKenna");
-		drawCircle(200,400,gc,"Ross");
-		drawCircle(500,250,gc,"Daniel");
-		drawCircle(200,500,gc, "Joy(Dog)");
-		drawCircle(500,400,gc,"Board Game Fans");
-		drawCircle(450,500,gc,"Fun Food Friends");
-
-		vbox.getChildren().add(canvas);
-
-		// Main layout is Border Pane example (top,left,center,right,bottom)
-		BorderPane root = new BorderPane();
-
-		// Add the vertical box to the center of the root pane
-		root.setCenter(vbox);
-		Scene mainScene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
-
-		// Add the stuff and set the primary stage
-		primaryStage.setTitle(APP_TITLE);
-		primaryStage.setScene(mainScene);
-		primaryStage.show();
-	}
 	
-	/**
-	 * Draws a circle at the specified coordinates
-	 * */
-	private void drawCircle(int x, int y, GraphicsContext gc, String label) {
-		gc.strokeOval(x-CIRCLE_RADIUS, y-CIRCLE_RADIUS, CIRCLE_RADIUS*2 + (label.length() * 3), CIRCLE_RADIUS*2);	
-		gc.setFont(new Font(10));
-		gc.fillText(label, x - (label.length()), y);
-		
-	}
-	
+	private static final String APP_TITLE = "Friend Maker";
+	protected ArrayList<Friend> friendList;
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+    	
+    	this.friendList = new ArrayList<Friend>();
+    	
+    	GridPane gridPane = newGridPane();
+    	
+    	addLabels(gridPane);
+    	
+        Scene scene = new Scene(gridPane, 1000, 500);
+
+        primaryStage.setScene(scene);
+        
+        primaryStage.setTitle(APP_TITLE);
+        primaryStage.setFullScreen(true);
+        
+        primaryStage.show();
+    }
+    
+    private GridPane newGridPane() {
+    	
+    	GridPane gridPane = new GridPane();
+    	
+    	gridPane.setBackground(new Background (new BackgroundFill(Color.ALICEBLUE, null, null)));
+    	
+    	gridPane.setAlignment(Pos.TOP_LEFT);
+    	
+    	gridPane.setPadding(new Insets(10, 10, 10, 10));
+    	
+    	gridPane.setHgap(10);
+    	gridPane.setVgap(20);
+    	
+    	return gridPane;
+    	
+    }
+    
+    private void addLabels(GridPane gridPane) {
+    	
+    	
+    	Label headerLabel = new Label(APP_TITLE);
+    	headerLabel.setFont(Font.font("Courier New", FontWeight.EXTRA_BOLD, 22));
+    	
+    	Label subtext = new Label("Let's make friends");
+    	subtext.setFont(Font.font("Courier New", FontWeight.EXTRA_LIGHT, 18));
+    	
+    	
+    	Label name = new Label("Friend Name: ");
+    	TextField nameField = new TextField();
+    	Label cUserLabel = new Label("Central User? ");
+    	CheckBox centralCheckBox = new CheckBox();
+    	Button submitButton = new Button("Make me a friend");
+    	
+    	gridPane.add(headerLabel, 0, 0);
+    	
+    	gridPane.add(subtext, 0, 1);
+    	
+    	gridPane.add(name, 0, 2);
+    	gridPane.add(nameField, 1, 2);
+    	gridPane.add(cUserLabel, 2, 2);
+    	gridPane.add(centralCheckBox, 3, 2);
+    	gridPane.add(submitButton, 4, 2);
+    	
+    	submitButton.setOnAction(new EventHandler<ActionEvent>() {
+
+			@Override
+			public void handle(ActionEvent event) {
+				
+				if (nameField.getText().isEmpty()) {
+					showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "Friend Name Required.", "Information required to continue: Your friend needs a name.");
+				
+				}
+				
+				if (!nameField.getText().isEmpty()) {
+					Friend friend;
+					String friendName = nameField.getText();
+					
+					showAlert(Alert.AlertType.INFORMATION, gridPane.getScene().getWindow(), "Friend Created!", 
+							"Success! Your new friend " + friendName + " has been created.");
+					
+					if (centralCheckBox.isSelected()) {
+						friend = new Friend(friendName, true);
+					}
+					else {
+						friend = new Friend(friendName, false);
+					}
+					
+					friendList.add(friend);
+					friend.addToGridPane(gridPane);
+				}
+    		
+    	};
+    	})  ;	
+    	
+    	
+    	Label remove = new Label("Remove a friend: ");
+    	TextField removeField = new TextField();
+    	Button removeButton = new Button("Remove my friend>:(");
+    	
+    	gridPane.add(remove, 0, 3);
+    	gridPane.add(removeField, 1, 3);
+    	gridPane.add(removeButton, 2, 3);
+    	
+    	removeButton.setOnAction(new EventHandler<ActionEvent>() {
+
+			@Override
+			public void handle(ActionEvent event) {
+				
+				if (removeField.getText().isEmpty()) {
+					showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "Friend Name Required.", "Information required to continue: you need to enter a name.");
+				
+				}
+				
+				if (!removeField.getText().isEmpty()) {
+					String removeName = removeField.getText();
+					if (getFriendWithName(removeName) == null) {
+						
+						
+						showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "No Friend Found!", 
+								"No friend found with name " + removeName + ". Please enter a friend that exists.");
+						
+					}
+				}
+				
+				if (!removeField.getText().isEmpty()) {
+					String removeName = removeField.getText();
+					Friend removeFriend = getFriendWithName(removeName);
+					if (removeFriend != null) {
+
+						showAlert(Alert.AlertType.INFORMATION, gridPane.getScene().getWindow(), "Success! Friend deleted.", 
+								"Guess you don't like " + removeName + " very much. They have been removed.");
+						friendList.remove(removeFriend);
+						removeFriend.removeFromGridPane(gridPane);
+						
+					}
+				}
+    		
+    	};
+    	})  ;
+    	
+    	
+    	
+    }
+    
+    private void showAlert(Alert.AlertType alertType, Window owner, String title, String message) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(message);
+        alert.setContentText(null);
+        alert.initOwner(owner);
+        alert.show();
+    }
+
+    
+    private Friend getFriendWithName(String friend) {
+    	
+    	for (Friend f : this.friendList) {
+    		if (f.getName().equals(friend)) { return f;}
+    	}
+    	
+    	return null;
+    }
+    
+
+    public static void main(String[] args) {
+        launch(args);
+    }
 }
+
 
 	
