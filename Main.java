@@ -124,7 +124,11 @@ public class Main extends Application {
 				
 				}
 				
-				if (!nameField.getText().isEmpty()) {
+				if ((!nameField.getText().isEmpty())&&(getFriendWithName(nameField.getText()) != null)) {
+					showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "No duplicate friends allowed.", "We already have a friend that's named " + nameField.getText() + ". Find a new friend.");
+				}
+				
+				if ((!nameField.getText().isEmpty())&&(getFriendWithName(nameField.getText()) == null)) {
 					Friend friend;
 					String friendName = nameField.getText();
 					
