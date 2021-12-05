@@ -1,0 +1,23 @@
+
+
+#titleLabel {
+	-fx-font-size: 36;
+}
+
+#subTitle {
+	-fx-font-size: 18;
+}
+
+#footer {
+	-fx-background-color: "red";
+}
+
+#footerLabel{
+	-fx-text-fill: "white";
+}
+
+.label {
+	-fx-font-family: "Lucida Console";
+}
+
+
