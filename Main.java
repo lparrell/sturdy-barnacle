@@ -1,6 +1,7 @@
 package application;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
 import javafx.stage.Stage;
 
 import javafx.application.Application;
@@ -66,7 +68,7 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         
         primaryStage.setTitle(APP_TITLE);
-        primaryStage.setFullScreen(true);
+        //primaryStage.setFullScreen(true);
         
         primaryStage.show();
     }
@@ -91,18 +93,22 @@ public class Main extends Application {
     private void addLabels(GridPane gridPane) {
     	
     	
+    	// Add button and behavior:
+    	
+    	
     	Label headerLabel = new Label(APP_TITLE);
-    	headerLabel.setFont(Font.font("Courier New", FontWeight.EXTRA_BOLD, 22));
+    	headerLabel.setFont(Font.font("Segoe UI", FontWeight.EXTRA_BOLD, 26));
+    	    	
+    	Label subtext = new Label("Let's make some friends");
+    	subtext.setFont(Font.font("Segoe UI", FontWeight.EXTRA_LIGHT, FontPosture.ITALIC, 18));
     	
-    	Label subtext = new Label("Let's make friends");
-    	subtext.setFont(Font.font("Courier New", FontWeight.EXTRA_LIGHT, 18));
     	
-    	
-    	Label name = new Label("Friend Name: ");
+    	Label name = new Label("Add new friend: ");
     	TextField nameField = new TextField();
+    	nameField.setPromptText("Name");
     	Label cUserLabel = new Label("Central User? ");
     	CheckBox centralCheckBox = new CheckBox();
-    	Button submitButton = new Button("Make me a friend");
+    	Button submitButton = new Button("Make me a friend!");
     	
     	gridPane.add(headerLabel, 0, 0);
     	
@@ -113,6 +119,7 @@ public class Main extends Application {
     	gridPane.add(cUserLabel, 2, 2);
     	gridPane.add(centralCheckBox, 3, 2);
     	gridPane.add(submitButton, 4, 2);
+    	
     	
     	submitButton.setOnAction(new EventHandler<ActionEvent>() {
 
@@ -150,9 +157,13 @@ public class Main extends Application {
     	})  ;	
     	
     	
+    	
+    	// Remove Button and Behavior:
+    	
     	Label remove = new Label("Remove a friend: ");
     	TextField removeField = new TextField();
-    	Button removeButton = new Button("Remove my friend>:(");
+    	removeField.setPromptText("Name");
+    	Button removeButton = new Button("Remove");
     	
     	gridPane.add(remove, 0, 3);
     	gridPane.add(removeField, 1, 3);
@@ -197,6 +208,71 @@ public class Main extends Application {
     	
     	
     	
+    	// Import field and behavior:
+    	
+    	Label importExportTitle = new Label("Load/Save a Friendship Network:");
+    	importExportTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+    	
+    	gridPane.add(importExportTitle, 0, 5);
+    	
+    	
+    	Label importTitle = new Label("Load File Path: ");
+    	TextField importField = new TextField();
+    	Button importButton = new Button("Import");
+    	
+    	gridPane.add(importTitle, 0, 6);
+    	gridPane.add(importField, 1, 6);
+    	gridPane.add(importButton, 2, 6);
+    	
+    	
+    	importButton.setOnAction(new EventHandler<ActionEvent>() {
+
+			@Override
+			public void handle(ActionEvent event) {
+				
+				if (importField.getText().isEmpty()) {
+					showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "File Name Required.", "Information required to continue: you need to enter a file.");
+				
+				}
+				
+				if (!importField.getText().isEmpty()) {
+					
+					try {
+						File f = new File(importField.getText());
+					}
+					catch (Exception e) {
+						showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "Error", "Error.");
+					}
+					
+					//TODO: catch exceptions and present them to the user 
+					// when file name is invalid
+//					catch (IOException e) {
+//						
+//					}
+					
+					
+				}
+				
+    		
+    	};
+    	})  ;
+    	
+    	
+    	
+    	// Export:
+    	
+    	Label exportTitle = new Label("Export File Path: ");
+    	TextField exportField = new TextField();
+    	Button exportButton = new Button("Export");
+    	
+    	gridPane.add(exportTitle, 0, 7);
+    	gridPane.add(exportField, 1, 7);
+    	gridPane.add(exportButton, 2, 7);
+    	
+    	// Add / Remove Relationships:
+    	
+    	
+    	
     }
     
     private void showAlert(Alert.AlertType alertType, Window owner, String title, String message) {
@@ -217,6 +293,18 @@ public class Main extends Application {
     	
     	return null;
     }
+    
+    
+    private Boolean validateFriendName(String friend) {
+    	
+    	// More of a placeholder than anything
+    	// TODO: validate the friend name is valid
+    	
+    	if (friend.contains(" ")) { return false; }
+
+    	return false;
+    }
+    
     
 
     public static void main(String[] args) {
