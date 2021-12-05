@@ -68,7 +68,7 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         
         primaryStage.setTitle(APP_TITLE);
-        //primaryStage.setFullScreen(true);
+        primaryStage.setFullScreen(true);
         
         primaryStage.show();
     }
@@ -210,7 +210,7 @@ public class Main extends Application {
     	
     	// Import field and behavior:
     	
-    	Label importExportTitle = new Label("Load/Save a Friendship Network:");
+    	Label importExportTitle = new Label("Load/Save a Friendship Network");
     	importExportTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
     	
     	gridPane.add(importExportTitle, 0, 5);
@@ -271,6 +271,34 @@ public class Main extends Application {
     	
     	// Add / Remove Relationships:
     	
+    	Label labelofFriendship = new Label("Create/End Friendships");
+    	labelofFriendship.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+    	gridPane.add(labelofFriendship, 0, 9);
+    	
+    	Label newfriendshipTitle = new Label("Create a Friendship between two friends: ");
+    	TextField user1friendField = new TextField();
+    	TextField user2friendField = new TextField();
+    	user1friendField.setPromptText("user1");
+    	user2friendField.setPromptText("user2");
+    	Button newFriendshipButton = new Button("Submit");
+    	
+    	gridPane.add(newfriendshipTitle, 0, 10);
+    	gridPane.add(user1friendField, 1, 10);
+    	gridPane.add(user2friendField, 2, 10);
+    	gridPane.add(newFriendshipButton, 3, 10);
+    	
+    	
+    	Label removefriendshipTitle = new Label("End a friendship between two friends: ");
+    	TextField user1removefriendshipField = new TextField();
+    	TextField user2removefriendshipField = new TextField();
+    	user1removefriendshipField.setPromptText("user1");
+    	user2removefriendshipField.setPromptText("user2");
+    	Button removeFriendshipButton = new Button("Submit");
+    	
+    	gridPane.add(removefriendshipTitle, 0, 11);
+    	gridPane.add(user1removefriendshipField, 1, 11);
+    	gridPane.add(user2removefriendshipField, 2, 11);
+    	gridPane.add(removeFriendshipButton, 3, 11);
     	
     	
     }

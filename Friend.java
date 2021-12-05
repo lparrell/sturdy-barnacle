@@ -66,14 +66,14 @@ public class Friend {
 		this.label = new Label(name);
 		
 		if (centralUser != true){
-			this.column = (int) (15 + (10 * Math.random()));
-			this.row = (int) (15 + (10 * Math.random()));
+			this.column = (int) (20 + (10 * Math.random()));
+			this.row = (int) (10 + (10 * Math.random()));
 		}
 		
 		
 		else {
-			this.column = 15;
-			this.row = 15;
+			this.column = 20;
+			this.row = 10;
 		}
 		
 		this.image = new Image(IMAGE_FILE_NAME);
