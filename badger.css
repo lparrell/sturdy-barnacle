@@ -1,7 +1,15 @@
+#grid {
+	-fx-background-color: linear-gradient(to top, #D0D0D0, #F7F7F7);
+}
 
+#title {
+	-fx-background-color: #D6060D;
+}
 
 #titleLabel {
 	-fx-font-size: 36;
+	-fx-font-weight: bold;
+	-fx-text-fill: #FFFFFF;
 }
 
 #subTitle {
@@ -9,15 +17,33 @@
 }
 
 #footer {
-	-fx-background-color: "red";
+	-fx-background-color: #373737;
 }
 
 #footerLabel{
-	-fx-text-fill: "white";
+	-fx-text-fill: #ADADAD;
 }
 
 .label {
-	-fx-font-family: "Lucida Console";
+	-fx-font-family: "Verlag", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
+
+
+.button {
+	-fx-background-color: linear-gradient(#C5050C, #E8070E);
+    	-fx-background-radius: 15;
+    	-fx-background-insets: 0;
+    	-fx-text-fill: white;
+	-fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0.5, 0.0, 0.0);
+}
+
+.button:hover {
+	-fx-background-color: radial-gradient(center 50% 50%, radius 100%, #E8070E, #C5050C);	
+}
+
+.button:pressed {
+	-fx-translate-y: 1;	
+}
+
 
 
