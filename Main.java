@@ -1,344 +1,324 @@
+/**
+ * Course: 			CS400 - Fall 2021
+ * Program:			Term Project - Social Network
+ * Names: 			<Ross Volkmann, McKenna Stillings, Laura Parrella>
+ * Wisc Email: 		<rvolkmann@wisc.edu, mstillings@wisc.edu, lparrella@wisc.edu>
+ * Web Sources: 	<http://fxexperience.com/2011/12/styling-fx-buttons-with-css/>
+ * Personal Help: 	<none>
+ */
+
 package application;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-import javafx.application.Application;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Cursor;
-import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
-import javafx.scene.image.Image;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.BackgroundImage;
-import javafx.scene.layout.Border;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.BorderStroke;
-import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
-import javafx.stage.Stage;
-
+//CS400 Final Project
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogEvent;
+import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-public class Main extends Application {
+public class Main extends Application implements EventHandler<ActionEvent> {
+
+	private List<String> args;
 	
-	private static final String APP_TITLE = "Friend Maker";
-	protected ArrayList<Friend> friendList;
+	private static final int WINDOW_WIDTH = 1024;
+	private static final int WINDOW_HEIGHT = 600;
+	private static final String APP_TITLE = "BadgerNet";
+	
+	///////////////////////////////////
+	//Declare Controls and Containers//
+	///////////////////////////////////
+	Scene mainScene;
+	Scene importDialogue, exportDialogue;
+	ScrollPane graphControl;
 
-    @Override
-    public void start(Stage primaryStage) throws Exception {
-    	
-    	this.friendList = new ArrayList<Friend>();
-    	
-    	GridPane gridPane = newGridPane();
-    	
-    	addLabels(gridPane);
-    	
-        Scene scene = new Scene(gridPane, 1000, 500);
+	Button importButton;
+	Button exportButton;
+	Button clearButton;
+	Button undoButton;
+	Button helpButton;
+	GridPane grid;
+	
+	
+	@Override
+	public void start(Stage primaryStage) throws Exception {
+		args = this.getParameters().getRaw();//save the args
 
-        primaryStage.setScene(scene);
-        
-        primaryStage.setTitle(APP_TITLE);
-        primaryStage.setFullScreen(true);
-        
-        primaryStage.show();
-    }
-    
-    private GridPane newGridPane() {
-    	
-    	GridPane gridPane = new GridPane();
-    	
-    	gridPane.setBackground(new Background (new BackgroundFill(Color.ALICEBLUE, null, null)));
-    	
-    	gridPane.setAlignment(Pos.TOP_LEFT);
-    	
-    	gridPane.setPadding(new Insets(10, 10, 10, 10));
-    	
-    	gridPane.setHgap(10);
-    	gridPane.setVgap(20);
-    	
-    	return gridPane;
-    	
-    }
-    
-    private void addLabels(GridPane gridPane) {
-    	
-    	
-    	// Add button and behavior:
-    	
-    	
-    	Label headerLabel = new Label(APP_TITLE);
-    	headerLabel.setFont(Font.font("Segoe UI", FontWeight.EXTRA_BOLD, 26));
-    	    	
-    	Label subtext = new Label("Let's make some friends");
-    	subtext.setFont(Font.font("Segoe UI", FontWeight.EXTRA_LIGHT, FontPosture.ITALIC, 18));
-    	
-    	
-    	Label name = new Label("Add new friend: ");
-    	TextField nameField = new TextField();
-    	nameField.setPromptText("Name");
-    	Label cUserLabel = new Label("Central User? ");
-    	CheckBox centralCheckBox = new CheckBox();
-    	Button submitButton = new Button("Make me a friend!");
-    	
-    	gridPane.add(headerLabel, 0, 0);
-    	
-    	gridPane.add(subtext, 0, 1);
-    	
-    	gridPane.add(name, 0, 2);
-    	gridPane.add(nameField, 1, 2);
-    	gridPane.add(cUserLabel, 2, 2);
-    	gridPane.add(centralCheckBox, 3, 2);
-    	gridPane.add(submitButton, 4, 2);
-    	
-    	
-    	submitButton.setOnAction(new EventHandler<ActionEvent>() {
+		//Values and Constants used for the layout
+		int hGap = 10; //horizontal gap between columns
+		int vGap = 6; //vertical gap between rows
+		int inset = 10; //padding around outside of grid
+		double width1 = (WINDOW_WIDTH / 4) * 3; //Width of column 0
+		double width2 = WINDOW_WIDTH - width1 - hGap - 2*inset; //Width of column 1
+		int smallMargin = 15;
+		
+		/////////////////////////////////////////////////
+		//Declare the top level controls and containers//
+		/////////////////////////////////////////////////
+		HBox title = new HBox();
+		Label subTitle = new Label("A Social Network");
+		graphControl = new ScrollPane();
+		VBox sideBar = new VBox();//new VBox();
+		HBox bottomBox = new HBox();//new HBox();
+		HBox footer = new HBox();
+		HBox utilities = new HBox();
+		
+		//Add labels to HBoxes and set position
+		Label titleLabel = new Label("BadgerNet");
+		title.getChildren().addAll(titleLabel);
+		title.setAlignment(Pos.CENTER);
+		Label footerLabel = new Label("An A10 Production");
+		footer.getChildren().addAll(footerLabel);
+		footer.setAlignment(Pos.CENTER);
+		
+		//Declare and configure controls for the sideBar
+		Label sideLabel1 = new Label("Add or Remove from the graph");
+		Label sideLabel2 = new Label("Enter 1 or 2 names");
+		TextField user1Text = new TextField();
+		TextField user2Text = new TextField();
+		Label sideLabel3 = new Label("View friends of:");
+		TextField userFocusText = new TextField();
+		user1Text.setPromptText("person 1");
+		user2Text.setPromptText("person 2");
+		userFocusText.setPromptText("See friends of...");
+		
+		//Create the radio buttons and contain them in an HBox
+		HBox radioButtons = new HBox();
+		ToggleGroup selectorGroup = new ToggleGroup();
+		RadioButton rb1 = new RadioButton("Add");
+		rb1.setToggleGroup(selectorGroup);
+		RadioButton rb2 = new RadioButton("Remove");
+		rb2.setToggleGroup(selectorGroup);
+		radioButtons.getChildren().addAll(rb1, rb2);
+		radioButtons.setAlignment(Pos.CENTER);
+		radioButtons.setSpacing(smallMargin);
+		//Configure the sideBar
+		sideBar.setAlignment(Pos.TOP_CENTER);
+		sideBar.setSpacing(smallMargin);
+		//Add controls to the sideBar
+		sideBar.getChildren().addAll(sideLabel1, radioButtons, sideLabel2, user1Text, user2Text, sideLabel3, userFocusText);
+		
+		//Declare controls for the bottomBox
+		importButton = new Button("Import Network");
+		exportButton = new Button("Export Network");
+		clearButton = new Button("Clear Network");
+		//Configure bottomBox
+		bottomBox.setSpacing(55);
+		bottomBox.setAlignment(Pos.CENTER);
+		//Add controls to the bottomBox
+		bottomBox.getChildren().addAll(importButton, exportButton,clearButton);
+		
+		//Declare controls for the utilities box
+		undoButton = new Button("Undo");
+		helpButton = new Button("Help");
+		utilities.setSpacing(35);
+		utilities.setAlignment(Pos.CENTER);
+		utilities.getChildren().addAll(undoButton,helpButton);
+		
+		/////////////////////////////////////////////
+		//Create the root layout pane as a GridPane//
+		/////////////////////////////////////////////
+		grid = new GridPane(); 
+		grid.setHgap(hGap);
+		grid.setVgap(vGap);
+		grid.setPadding(new Insets(inset,inset,inset,inset)); //JavaFX geometry import
+		//grid.setGridLinesVisible(true); //TODO: remove later, used for debugging
+		
+		//Set the two main column widths -- revise this later if necessary
+		grid.getColumnConstraints().add(new ColumnConstraints(width1));
+		grid.getColumnConstraints().add(new ColumnConstraints(width2));
+		
+		//Assign Grid Positions -- reminder: setConstraints(control, col, row)
+		GridPane.setConstraints(title, 0, 0);
+		GridPane.setConstraints(subTitle, 0, 1);
+		GridPane.setConstraints(graphControl, 0, 2);
+		GridPane.setConstraints(sideBar,1, 2);
+		GridPane.setConstraints(bottomBox, 0, 3);
+		GridPane.setConstraints(footer, 0, 4);
+		GridPane.setConstraints(utilities, 1, 3);
+		
+		//Title Position
+		GridPane.setColumnSpan(title, 2);
+		GridPane.setHalignment(title, HPos.CENTER);
+		//Subtitle Position
+		GridPane.setColumnSpan(subTitle, 2);
+		GridPane.setHalignment(subTitle, HPos.CENTER);
+		//SideBox Position 
+		GridPane.setRowSpan(sideBar, 2);
+		GridPane.setHalignment(sideBar, HPos.CENTER);
+		GridPane.setValignment(sideBar, VPos.CENTER);
+		//Graph Position
+		GridPane.setHalignment(graphControl, HPos.CENTER);
+		GridPane.setValignment(graphControl, VPos.CENTER);
+		//TODO
+		//BottomBox Position
+		GridPane.setHalignment(bottomBox, HPos.CENTER);
+		//Footer Position
+		GridPane.setColumnSpan(footer, 2);
+		GridPane.setHalignment(footer, HPos.CENTER);
+		
+		//Configure the graphControl
+		graphControl.setPrefHeight(600);
+		graphControl.setPrefWidth(width1);
+		Image image1 = new Image("images/SocialNetwork.png"); //placeholder
+		ImageView iv1 = new ImageView(); //placeholder
+		iv1.setImage(image1); //placeholder
+		graphControl.setContent(iv1);
+		
+		///////////////////////////////
+		//Add children to grid object//
+		///////////////////////////////
+		grid.getChildren().addAll(title, subTitle, graphControl, sideBar, bottomBox, footer, utilities);
+		
+		////////////////////////
+		//Initialize the Scene//
+		////////////////////////
+		mainScene = new Scene(grid, WINDOW_WIDTH, WINDOW_HEIGHT);
+		
+		//////////////////////////////////////////
+		//Associate Controls with Event Handlers//
+		//////////////////////////////////////////
+		importButton.setOnAction(this);
+		exportButton.setOnAction(this);
+		clearButton.setOnAction(this);
+		helpButton.setOnAction(this);
+		undoButton.setOnAction(this);
+		
+		
+		//Apply css ids and classes
+		title.setId("title");
+		titleLabel.setId("titleLabel");
+		subTitle.setId("subTitle");
+		bottomBox.setId("bottomBox");
+		footer.setId("footer");
+		footerLabel.setId("footerLabel");
+		grid.setId("grid");
+		
+		//Apply css to the scene
+		String css = this.getClass().getResource("badger.css").toExternalForm();
+		mainScene.getStylesheets().add(css);
 
-			@Override
-			public void handle(ActionEvent event) {
-				
-				if (nameField.getText().isEmpty()) {
-					showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "Friend Name Required.", "Information required to continue: Your friend needs a name.");
-				
-				}
-				
-				if ((!nameField.getText().isEmpty())&&(getFriendWithName(nameField.getText()) != null)) {
-					showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "No duplicate friends allowed.", "We already have a friend that's named " + nameField.getText() + ". Find a new friend.");
-				}
-				
-				if ((!nameField.getText().isEmpty())&&(getFriendWithName(nameField.getText()) == null)) {
-					Friend friend;
-					String friendName = nameField.getText();
-					
-					showAlert(Alert.AlertType.INFORMATION, gridPane.getScene().getWindow(), "Friend Created!", 
-							"Success! Your new friend " + friendName + " has been created.");
-					
-					if (centralCheckBox.isSelected()) {
-						friend = new Friend(friendName, true);
-					}
-					else {
-						friend = new Friend(friendName, false);
-					}
-					
-					friendList.add(friend);
-					friend.addToGridPane(gridPane);
-				}
-    		
-    	};
-    	})  ;	
-    	
-    	
-    	
-    	// Remove Button and Behavior:
-    	
-    	Label remove = new Label("Remove a friend: ");
-    	TextField removeField = new TextField();
-    	removeField.setPromptText("Name");
-    	Button removeButton = new Button("Remove");
-    	
-    	gridPane.add(remove, 0, 3);
-    	gridPane.add(removeField, 1, 3);
-    	gridPane.add(removeButton, 2, 3);
-    	
-    	removeButton.setOnAction(new EventHandler<ActionEvent>() {
+		// Add the stuff and set the primary stage
+		primaryStage.setTitle(APP_TITLE);
+		primaryStage.setScene(mainScene);
+		primaryStage.show();
+	}
 
-			@Override
-			public void handle(ActionEvent event) {
-				
-				if (removeField.getText().isEmpty()) {
-					showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "Friend Name Required.", "Information required to continue: you need to enter a name.");
-				
-				}
-				
-				if (!removeField.getText().isEmpty()) {
-					String removeName = removeField.getText();
-					if (getFriendWithName(removeName) == null) {
-						
-						
-						showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "No Friend Found!", 
-								"No friend found with name " + removeName + ". Please enter a friend that exists.");
-						
-					}
-				}
-				
-				if (!removeField.getText().isEmpty()) {
-					String removeName = removeField.getText();
-					Friend removeFriend = getFriendWithName(removeName);
-					if (removeFriend != null) {
+	
+	
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		launch(args);
 
-						showAlert(Alert.AlertType.INFORMATION, gridPane.getScene().getWindow(), "Success! Friend deleted.", 
-								"Guess you don't like " + removeName + " very much. They have been removed.");
-						friendList.remove(removeFriend);
-						removeFriend.removeFromGridPane(gridPane);
-						
-					}
-				}
-    		
-    	};
-    	})  ;
-    	
-    	
-    	
-    	// Import field and behavior:
-    	
-    	Label importExportTitle = new Label("Load/Save a Friendship Network");
-    	importExportTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-    	
-    	gridPane.add(importExportTitle, 0, 5);
-    	
-    	
-    	Label importTitle = new Label("Load File Path: ");
-    	TextField importField = new TextField();
-    	Button importButton = new Button("Import");
-    	
-    	gridPane.add(importTitle, 0, 6);
-    	gridPane.add(importField, 1, 6);
-    	gridPane.add(importButton, 2, 6);
-    	
-    	
-    	importButton.setOnAction(new EventHandler<ActionEvent>() {
+	}
 
-			@Override
-			public void handle(ActionEvent event) {
-				
-				if (importField.getText().isEmpty()) {
-					showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "File Name Required.", "Information required to continue: you need to enter a file.");
-				
-				}
-				
-				if (!importField.getText().isEmpty()) {
-					
-					try {
-						File f = new File(importField.getText());
-					}
-					catch (Exception e) {
-						showAlert(Alert.AlertType.ERROR, gridPane.getScene().getWindow(), "Error", "Error.");
-					}
-					
-					//TODO: catch exceptions and present them to the user 
-					// when file name is invalid
-//					catch (IOException e) {
-//						
-//					}
-					
-					
-				}
-				
-    		
-    	};
-    	})  ;
-    	
-    	
-    	
-    	// Export:
-    	
-    	Label exportTitle = new Label("Export File Path: ");
-    	TextField exportField = new TextField();
-    	Button exportButton = new Button("Export");
-    	
-    	gridPane.add(exportTitle, 0, 7);
-    	gridPane.add(exportField, 1, 7);
-    	gridPane.add(exportButton, 2, 7);
-    	
-    	// Add / Remove Relationships:
-    	
-    	Label labelofFriendship = new Label("Create/End Friendships");
-    	labelofFriendship.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-    	gridPane.add(labelofFriendship, 0, 9);
-    	
-    	Label newfriendshipTitle = new Label("Create a Friendship between two friends: ");
-    	TextField user1friendField = new TextField();
-    	TextField user2friendField = new TextField();
-    	user1friendField.setPromptText("user1");
-    	user2friendField.setPromptText("user2");
-    	Button newFriendshipButton = new Button("Submit");
-    	
-    	gridPane.add(newfriendshipTitle, 0, 10);
-    	gridPane.add(user1friendField, 1, 10);
-    	gridPane.add(user2friendField, 2, 10);
-    	gridPane.add(newFriendshipButton, 3, 10);
-    	
-    	
-    	Label removefriendshipTitle = new Label("End a friendship between two friends: ");
-    	TextField user1removefriendshipField = new TextField();
-    	TextField user2removefriendshipField = new TextField();
-    	user1removefriendshipField.setPromptText("user1");
-    	user2removefriendshipField.setPromptText("user2");
-    	Button removeFriendshipButton = new Button("Submit");
-    	
-    	gridPane.add(removefriendshipTitle, 0, 11);
-    	gridPane.add(user1removefriendshipField, 1, 11);
-    	gridPane.add(user2removefriendshipField, 2, 11);
-    	gridPane.add(removeFriendshipButton, 3, 11);
-    	
-    	
-    }
-    
-    private void showAlert(Alert.AlertType alertType, Window owner, String title, String message) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(message);
-        alert.setContentText(null);
+	
+	public void handle(ActionEvent event) {
+		if(event.getSource()==importButton) {
+			String importpath = showImportExportBox(grid.getScene().getWindow(), true);
+		}
+		if(event.getSource()==exportButton) {
+			String exportpath = showImportExportBox(grid.getScene().getWindow(), false);
+		}
+		if(event.getSource()==clearButton) {
+			showAlerts(Alert.AlertType.CONFIRMATION, grid.getScene().getWindow(),"Success!","Success! Social Network Cleared.");
+		}
+		if(event.getSource()==helpButton) {
+			showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(),"How to...",returnHelpText());
+		}
+		if(event.getSource()==undoButton) {
+			//TODO:
+			// Undo the action
+		}
+	}
+	
+    private void showAlerts(Alert.AlertType type, Window owner, String header, String headerMsg) {
+        Alert alert = new Alert(type);
+        alert.setTitle(header);
+        alert.setHeaderText(null);
+        alert.setContentText(headerMsg);
         alert.initOwner(owner);
         alert.show();
     }
-
     
-    private Friend getFriendWithName(String friend) {
+    private String showImportExportBox(Window owner, Boolean isImport) {
     	
-    	for (Friend f : this.friendList) {
-    		if (f.getName().equals(friend)) { return f;}
-    	}
+    	TextInputDialog dialog = new TextInputDialog();
     	
-    	return null;
+    	String text = "import";
+    	if (!isImport) { text = "export"; }
+    	
+    	dialog.setHeaderText("Enter an " + text + " file path:");
+    	dialog.initOwner(owner);
+    	Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+    	
+    	okButton.setOnAction(new EventHandler<ActionEvent>() {
+    		
+			@Override
+			public void handle(ActionEvent arg0) {
+				if (dialog.getResult().isEmpty()) {
+					showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Information Required.","Information required to continue: you need to enter a file path.");
+				}
+				
+				if (!dialog.getResult().isEmpty()) {
+					
+					//TODO: Gracefully catch IOException and display message to user
+					// if file path is invalid or unable to be interpreted by system
+					// then load or export file based on user selection
+					String filepath = dialog.getResult();
+					
+					if (isImport) {
+						showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Nice","You entered: " + filepath);
+					}
+					
+					if (!isImport) { // if it's not import, it's export
+						showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Nice","You entered: " + filepath);
+					}
+
+				}
+			}
+    	});
+
+    	dialog.showAndWait();
+    	return dialog.getContentText();
     }
     
     
-    private Boolean validateFriendName(String friend) {
+    private String returnHelpText() {
     	
-    	// More of a placeholder than anything
-    	// TODO: validate the friend name is valid
+    	String helptext =
+    			"TO ADD A USER: Toggle the 'Add' radio button and enter a name\n"
+    			+ "TO ADD A FRIENDSHIP: Toggle the 'Add' radio button and enter in TWO names.\n"
+    			+ "TO REMOVE A USER: Toggle the 'Remove' radio button and enter a name.\n"
+    			+ "TO REMOVE A FRIENSHIP: Toggle the 'Remove' radio button and enter in TWO names.";
     	
-    	if (friend.contains(" ")) { return false; }
-
-    	return false;
+    	return helptext;
+    	
+    	
     }
-    
-    
-
-    public static void main(String[] args) {
-        launch(args);
-    }
-}
-
-
 	
+}
