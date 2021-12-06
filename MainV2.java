@@ -3,7 +3,7 @@
  * Program:			Term Project - Social Network
  * Names: 			<Ross Volkmann, McKenna Stillings, Laura Parella>
  * Wisc Email: 		<rvolkmann@wisc.edu, mstillings@wisc.edu, lparella@wisc.edu>
- * Web Sources: 	<none>
+ * Web Sources: 	<http://fxexperience.com/2011/12/styling-fx-buttons-with-css/>
  * Personal Help: 	<none>
  */
 
@@ -13,6 +13,8 @@ import java.util.List;
 
 //CS400 Final Project
 import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -32,13 +34,27 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class Main extends Application {
+public class Main extends Application implements EventHandler<ActionEvent> {
 
 	private List<String> args;
 	
 	private static final int WINDOW_WIDTH = 1024;
 	private static final int WINDOW_HEIGHT = 600;
 	private static final String APP_TITLE = "BadgerNet";
+	
+	///////////////////////////////////
+	//Declare Controls and Containers//
+	///////////////////////////////////
+	Scene mainScene;
+	Scene importDialogue, exportDialogue;
+	ScrollPane graphControl;
+
+	Button importButton;
+	Button exportButton;
+	Button clearButton;
+	Button undoButton;
+	Button helpButton;
+	
 	
 	@Override
 	public void start(Stage primaryStage) throws Exception {
@@ -52,26 +68,31 @@ public class Main extends Application {
 		double width2 = WINDOW_WIDTH - width1 - hGap - 2*inset; //Width of column 1
 		int smallMargin = 15;
 		
-		//Declare the top level controls and containers
-		Label titleLabel = new Label("BadgerNet");
+		/////////////////////////////////////////////////
+		//Declare the top level controls and containers//
+		/////////////////////////////////////////////////
+		HBox title = new HBox();
 		Label subTitle = new Label("A Social Network");
-		ScrollPane graphControl = new ScrollPane();
+		graphControl = new ScrollPane();
 		VBox sideBar = new VBox();//new VBox();
 		HBox bottomBox = new HBox();//new HBox();
 		HBox footer = new HBox();
+		HBox utilities = new HBox();
 		
-	
 		//Add labels to HBoxes and set position
+		Label titleLabel = new Label("BadgerNet");
+		title.getChildren().addAll(titleLabel);
+		title.setAlignment(Pos.CENTER);
 		Label footerLabel = new Label("An A10 Production");
 		footer.getChildren().addAll(footerLabel);
 		footer.setAlignment(Pos.CENTER);
 		
-		//Declare controls for the sideBar
-		String labelModifier1 = "Add";
-		Label sideLabel1 = new Label(labelModifier1+ " to Network");
+		//Declare and configure controls for the sideBar
+		Label sideLabel1 = new Label("Add or Remove from the graph");
+		Label sideLabel2 = new Label("Enter 1 or 2 names");
 		TextField user1Text = new TextField();
 		TextField user2Text = new TextField();
-		Label sideLabel2 = new Label("View friends of:");
+		Label sideLabel3 = new Label("View friends of:");
 		TextField userFocusText = new TextField();
 		user1Text.setPromptText("person 1");
 		user2Text.setPromptText("person 2");
@@ -91,19 +112,28 @@ public class Main extends Application {
 		sideBar.setAlignment(Pos.TOP_CENTER);
 		sideBar.setSpacing(smallMargin);
 		//Add controls to the sideBar
-		sideBar.getChildren().addAll(sideLabel1, user1Text, user2Text, radioButtons, sideLabel2, userFocusText);
+		sideBar.getChildren().addAll(sideLabel1, radioButtons, sideLabel2, user1Text, user2Text, sideLabel3, userFocusText);
 		
 		//Declare controls for the bottomBox
-		Button importButton = new Button("Import Network");
-		Button exportButton = new Button("Export Network");
-		Button clearButton = new Button("Clear Network");
+		importButton = new Button("Import Network");
+		exportButton = new Button("Export Network");
+		clearButton = new Button("Clear Network");
 		//Configure bottomBox
 		bottomBox.setSpacing(55);
 		bottomBox.setAlignment(Pos.CENTER);
 		//Add controls to the bottomBox
 		bottomBox.getChildren().addAll(importButton, exportButton,clearButton);
 		
-		//The root layout pane will be a grid
+		//Declare controls for the utilities box
+		undoButton = new Button("Undo");
+		helpButton = new Button("Help");
+		utilities.setSpacing(35);
+		utilities.setAlignment(Pos.CENTER);
+		utilities.getChildren().addAll(undoButton,helpButton);
+		
+		/////////////////////////////////////////////
+		//Create the root layout pane as a GridPane//
+		/////////////////////////////////////////////
 		GridPane grid = new GridPane(); 
 		grid.setHgap(hGap);
 		grid.setVgap(vGap);
@@ -115,16 +145,17 @@ public class Main extends Application {
 		grid.getColumnConstraints().add(new ColumnConstraints(width2));
 		
 		//Assign Grid Positions -- reminder: setConstraints(control, col, row)
-		GridPane.setConstraints(titleLabel, 0, 0);
+		GridPane.setConstraints(title, 0, 0);
 		GridPane.setConstraints(subTitle, 0, 1);
 		GridPane.setConstraints(graphControl, 0, 2);
 		GridPane.setConstraints(sideBar,1, 2);
 		GridPane.setConstraints(bottomBox, 0, 3);
 		GridPane.setConstraints(footer, 0, 4);
+		GridPane.setConstraints(utilities, 1, 3);
 		
 		//Title Position
-		GridPane.setColumnSpan(titleLabel, 2);
-		GridPane.setHalignment(titleLabel, HPos.CENTER);
+		GridPane.setColumnSpan(title, 2);
+		GridPane.setHalignment(title, HPos.CENTER);
 		//Subtitle Position
 		GridPane.setColumnSpan(subTitle, 2);
 		GridPane.setHalignment(subTitle, HPos.CENTER);
@@ -150,19 +181,32 @@ public class Main extends Application {
 		iv1.setImage(image1); //placeholder
 		graphControl.setContent(iv1);
 		
-		//Add children to grid object
-		grid.getChildren().addAll(titleLabel, subTitle, graphControl, sideBar, bottomBox, footer);
-
-		//Declare the Scene
-		Scene mainScene = new Scene(grid, WINDOW_WIDTH, WINDOW_HEIGHT);
+		///////////////////////////////
+		//Add children to grid object//
+		///////////////////////////////
+		grid.getChildren().addAll(title, subTitle, graphControl, sideBar, bottomBox, footer, utilities);
+		
+		////////////////////////
+		//Initialize the Scene//
+		////////////////////////
+		mainScene = new Scene(grid, WINDOW_WIDTH, WINDOW_HEIGHT);
+		
+		//////////////////////////////////////////
+		//Associate Controls with Event Handlers//
+		//////////////////////////////////////////
+		importButton.setOnAction(this);
+		exportButton.setOnAction(this);
+		clearButton.setOnAction(this);
+		
 		
 		//Apply css ids and classes
+		title.setId("title");
 		titleLabel.setId("titleLabel");
 		subTitle.setId("subTitle");
 		bottomBox.setId("bottomBox");
 		footer.setId("footer");
 		footerLabel.setId("footerLabel");
-		
+		grid.setId("grid");
 		
 		//Apply css to the scene
 		String css = this.getClass().getResource("badger.css").toExternalForm();
@@ -174,6 +218,8 @@ public class Main extends Application {
 		primaryStage.show();
 	}
 
+	
+	
 	/**
 	 * @param args
 	 */
@@ -182,4 +228,18 @@ public class Main extends Application {
 
 	}
 
+	
+	@Override
+	public void handle(ActionEvent event) {
+		if(event.getSource()==importButton) {
+			System.out.println("import button pressed.");
+		}
+		if(event.getSource()==exportButton) {
+			System.out.println("export button pressed.");
+		}
+		if(event.getSource()==clearButton) {
+			System.out.println("clear button pressed.");
+		}
+	}
+	
 }
