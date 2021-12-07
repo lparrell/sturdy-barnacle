@@ -68,15 +68,39 @@ public class NetworkManager {
 		return focusUser;
 	}
 	
-	/**
-     * Helper method to get all users in the Network
-     * 
-     * @return Set<String> of all the users
-     */
-    public Set<String> getAllPackages() {
+    
+	////////////////////////////////////////////////////////
+	//Wrapper methods for interacting with UndirectedGraph//
+	////////////////////////////////////////////////////////
+	public void addUser(String name) {
+		graph.addVertex(name);
+	}
+
+	public void addFriendship(String name1, String name2) {
+		graph.addEdge(name1, name2);
+	}
+
+	public void removeUser(String name) {
+		graph.removeVertex(name);
+	}
+
+	public void removeFriendship(String name1, String name2) {
+		graph.removeEdge(name1, name2);
+	}
+
+	public int getNumUsers() {
+		return graph.order();
+	}
+
+	public int getNumFriendships() {
+		return graph.size();
+	}
+	
+	public Set<String> getAllUsers() {
         return graph.getAllVertices();
     }
-    
-    
-	
+	////////////////////////////////////////////////////////
+	////////////////End of Wrapper methods//////////////////
+	////////////////////////////////////////////////////////
+
 }
