@@ -1,7 +1,10 @@
 package application;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.IllegalFormatException;
+import java.util.Scanner;
 import java.util.Set;
 
 public class NetworkManager {
@@ -31,11 +34,45 @@ public class NetworkManager {
 	 * @param filename - relative filepath to the .txt file the graph is to be constructed from
 	 * @throws FileNotFoundException - if file path is incorrect
 	 * @throws IOException - IOException if the give file cannot be read
-	 * @throws ImportFormatException - is formatted incorrectly
+	 * @throws IllegalFormat - is formatted incorrectly
 	 */
-	public void importGraph(String filepath)throws FileNotFoundException, IOException, ImportFormatException {
-	
+	public void importGraph(String filepath)throws FileNotFoundException, IOException, IllegalFormatException {
+		try {
+			File file = new File(filepath);
+			Scanner scanner = new Scanner(file);
+			
+			while (scanner.hasNextLine()) {
+				String data = scanner.nextLine();
+				String input[] = data.split(" ");
+				if (input[0].equals("a")) {
+					for (int i=1; i<input.length; i++) {
+						addUser(input[i]);	
+					}
+					if (input.length > 2) {
+						addFriendship(input[1],input[2]);
+					}
+				}
+				if (input[0].equals("r")) {
+					if (input.length==3) {
+						removeFriendship(input[1],input[2]);
+					}
+					else {
+						for (int i=1; i<input.length; i++) {
+							removeUser(input[i]);
+						}
+					}
+				}
+				if (input[0].equals("s")) {
+					setFocus(input[1]);
+				}
+			}
+			scanner.close();
+		}
+		catch (FileNotFoundException e) {
+			//What do we want to do here? is it easy to trigger a popup from here to say "invalid file, please try again?"
+		}
 	}
+	
 	
 	/**
 	 * Creates a file and writes the current state of the graph to this file.  
@@ -44,7 +81,9 @@ public class NetworkManager {
 	 * @param filename
 	 */
 	public void exportGraph(String filename) {
-		
+		for (int i=0; i<graph.size(); i++) {
+			
+		}
 	}
 	
 	/**
