@@ -3,7 +3,6 @@ package application;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.IllegalFormatException;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -18,6 +17,7 @@ public class NetworkManager {
 	 */
 	public NetworkManager() {
         graph = new UndirectedGraph();
+        focusUser = "";
     }
 	
 	/**
@@ -34,30 +34,29 @@ public class NetworkManager {
 	 * @param filename - relative filepath to the .txt file the graph is to be constructed from
 	 * @throws FileNotFoundException - if file path is incorrect
 	 * @throws IOException - IOException if the give file cannot be read
-	 * @throws IllegalFormat - is formatted incorrectly
+	 * @throws ImportFormatException - is formatted incorrectly
 	 */
-	public void importGraph(String filepath)throws FileNotFoundException, IOException, IllegalFormatException {
+	public void importGraph(String filepath) throws FileNotFoundException, IOException, ImportFormatException {
 		try {
 			File file = new File(filepath);
 			Scanner scanner = new Scanner(file);
-			
+
 			while (scanner.hasNextLine()) {
 				String data = scanner.nextLine();
 				String input[] = data.split(" ");
 				if (input[0].equals("a")) {
-					for (int i=1; i<input.length; i++) {
-						addUser(input[i]);	
+					for (int i = 1; i < input.length; i++) {
+						addUser(input[i]);
 					}
 					if (input.length > 2) {
-						addFriendship(input[1],input[2]);
+						addFriendship(input[1], input[2]);
 					}
 				}
 				if (input[0].equals("r")) {
-					if (input.length==3) {
-						removeFriendship(input[1],input[2]);
-					}
-					else {
-						for (int i=1; i<input.length; i++) {
+					if (input.length == 3) {
+						removeFriendship(input[1], input[2]);
+					} else {
+						for (int i = 1; i < input.length; i++) {
 							removeUser(input[i]);
 						}
 					}
@@ -67,22 +66,21 @@ public class NetworkManager {
 				}
 			}
 			scanner.close();
-		}
-		catch (FileNotFoundException e) {
-			//What do we want to do here? is it easy to trigger a popup from here to say "invalid file, please try again?"
+		} catch (FileNotFoundException e) {
+			// What do we want to do here? is it easy to trigger a popup from here to say
+			// "invalid file, please try again?"
 		}
 	}
 	
-	
 	/**
-	 * Creates a file and writes the current state of the graph to this file.  
-	 * The current focusUser is added to the last line of the file ex: s focusUser
+	 * Creates a file and writes the current state of the graph to this file. The
+	 * current focusUser is added to the last line of the file ex: s focusUser
 	 * 
 	 * @param filename
 	 */
 	public void exportGraph(String filename) {
-		for (int i=0; i<graph.size(); i++) {
-			
+		for (int i = 0; i < graph.size(); i++) {
+
 		}
 	}
 	
@@ -111,20 +109,57 @@ public class NetworkManager {
 	////////////////////////////////////////////////////////
 	//Wrapper methods for interacting with UndirectedGraph//
 	////////////////////////////////////////////////////////
-	public void addUser(String name) {
+	public boolean addUser(String name) {
+		if(!validString(name)) {
+			return false;
+		}
 		graph.addVertex(name);
+		if(focusUser.equals("")) {//if initial user entered, set focus
+			setFocus(name);
+		}
+		return true;
 	}
 
-	public void addFriendship(String name1, String name2) {
+	public boolean addFriendship(String name1, String name2) {
+		if(!validString(name1) || !validString(name2)) {
+			return false;
+		}
 		graph.addEdge(name1, name2);
+		if(focusUser.equals("")) {//if initial users entered, set focus
+			setFocus(name1);
+		}
+		return true;
 	}
 
-	public void removeUser(String name) {
+	public boolean removeUser(String name) {
+		if(!validString(name)) {
+			return false;
+		}
 		graph.removeVertex(name);
+		if(name.equals(focusUser)) {
+			//TODO: figure out how to handle this
+		}
+		if(this.getNumUsers() == 0) {
+			setFocus("");
+		}
+		return true;
 	}
 
-	public void removeFriendship(String name1, String name2) {
+	public boolean removeFriendship(String name1, String name2) {
+		if(!validString(name1) || !validString(name2)) {
+			return false;
+		}
 		graph.removeEdge(name1, name2);
+		if(name1.equals(focusUser)) {
+			//TODO: figure out how to handle this
+		}
+		if(name2.equals(focusUser)) {
+			//TODO: figure out how to handle this
+		}
+		if(this.getNumUsers() == 0) {
+			setFocus("");
+		}
+		return true;
 	}
 
 	public int getNumUsers() {
@@ -142,4 +177,20 @@ public class NetworkManager {
 	////////////////End of Wrapper methods//////////////////
 	////////////////////////////////////////////////////////
 
+	/**
+	 * Confirms whether the string passed into add/remove methods is
+	 * <= 30 characters and has only 1 word
+	 */
+	private boolean validString(String input) {
+		if(input.length() > 30) {
+			return false;
+		}
+		String sentence = input;
+		String[] words = sentence.split(" ");
+		if(words.length > 1) {
+			return false;
+		}
+		return true;
+	}
+	
 }
