@@ -7,9 +7,24 @@
  * Personal Help: 	<none>
  */
 
+
+/**
+ * GUI MAJOR TODO:
+ * -Increase size of help alert box to display all text 
+ * -Set radio button so that add is selected by default
+ * -Add Exit button that asks if use wants to save before quitting
+ * 
+ * GUI minor TODO:
+ * -Make canvas click detection more... round
+ * 
+ */
+
 package application;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 //CS400 Final Project
 import javafx.application.Application;
@@ -20,6 +35,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -36,20 +53,34 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
 public class Main extends Application implements EventHandler<ActionEvent> {
-
 	private List<String> args;
 	
+	//Values and Constants used for the layout
 	private static final int WINDOW_WIDTH = 1024;
 	private static final int WINDOW_HEIGHT = 600;
 	private static final String APP_TITLE = "BadgerNet";
+	private static final int GRAPH_HEIGHT = 425;
+	private static final double RADIUS = 30;
 	
-	///////////////////////////////////
-	//Declare Controls and Containers//
-	///////////////////////////////////
+	int hGap = 10; //horizontal gap between columns
+	int vGap = 6; //vertical gap between rows
+	int inset = 10; //padding around outside of grid
+	double width1 = (WINDOW_WIDTH / 4) * 3; //Width of column 0
+	double width2 = WINDOW_WIDTH - width1 - hGap - 2*inset; //Width of column 
+	int smallMargin = 15;
+	
+	Color softGold = Color.rgb(253, 236, 166);
+	Color mildTeal = Color.rgb(166, 230, 253);
+	
+	/////////////////////////////////////////////////
+	//Declare controls, containers, and global vars//
+	/////////////////////////////////////////////////
 	Scene mainScene;
 	Scene importDialogue, exportDialogue;
 	ScrollPane graphControl;
@@ -60,20 +91,23 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 	Button undoButton;
 	Button helpButton;
 	GridPane grid;
+	Canvas canvas;
+	TextField user1Text;
+	TextField user2Text;
+	TextField userFocusText;
 	
+	NetworkManager network = new NetworkManager();
+
+	//Note - Be CAREFUL where you call/set these.  These should never be updated
+	//without also calling drawGraph and they should always be called together
+	String focusUser = "Ross";//DEBUG - placeholder default
+	ArrayList<HashSet<Person>> relationships;
+	ArrayList<Person> users;
 	
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		args = this.getParameters().getRaw();//save the args
 
-		//Values and Constants used for the layout
-		int hGap = 10; //horizontal gap between columns
-		int vGap = 6; //vertical gap between rows
-		int inset = 10; //padding around outside of grid
-		double width1 = (WINDOW_WIDTH / 4) * 3; //Width of column 0
-		double width2 = WINDOW_WIDTH - width1 - hGap - 2*inset; //Width of column 1
-		int smallMargin = 15;
-		
 		/////////////////////////////////////////////////
 		//Declare the top level controls and containers//
 		/////////////////////////////////////////////////
@@ -96,10 +130,10 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		//Declare and configure controls for the sideBar
 		Label sideLabel1 = new Label("Add or Remove from the graph");
 		Label sideLabel2 = new Label("Enter 1 or 2 names");
-		TextField user1Text = new TextField();
-		TextField user2Text = new TextField();
+		user1Text = new TextField();
+		user2Text = new TextField();
 		Label sideLabel3 = new Label("View friends of:");
-		TextField userFocusText = new TextField();
+		userFocusText = new TextField();
 		user1Text.setPromptText("person 1");
 		user2Text.setPromptText("person 2");
 		userFocusText.setPromptText("See friends of...");
@@ -179,13 +213,24 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		GridPane.setColumnSpan(footer, 2);
 		GridPane.setHalignment(footer, HPos.CENTER);
 		
-		//Configure the graphControl
-		graphControl.setPrefHeight(600);
-		graphControl.setPrefWidth(width1);
-		Image image1 = new Image("images/SocialNetwork.png"); //placeholder
-		ImageView iv1 = new ImageView(); //placeholder
-		iv1.setImage(image1); //placeholder
-		graphControl.setContent(iv1);
+		///////////////////////
+		//GRAPH VISUALIZATION//
+		///////////////////////
+		
+		//Initialize new canvas and display the initial starting image
+		canvas = new Canvas(width1, GRAPH_HEIGHT);
+		
+		//Set dimensions of the graphControl
+		graphControl.setPrefViewportHeight(canvas.getHeight());
+		graphControl.setPrefViewportWidth(canvas.getWidth());
+		
+		System.out.println(sideBar.getHeight());
+		graphControl.setContent(canvas);
+		GraphicsContext gc = canvas.getGraphicsContext2D();
+		gc.setFill(Color.BLACK);
+		gc.setFont(new Font(11.5));
+		//132 is arbitrary constant the approximates length of the displayed String
+		gc.fillText("Please import a network from file or add a user to begin.", canvas.getWidth()/2-132 , canvas.getHeight()/2);
 		
 		///////////////////////////////
 		//Add children to grid object//
@@ -200,12 +245,32 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		//////////////////////////////////////////
 		//Associate Controls with Event Handlers//
 		//////////////////////////////////////////
+		//Buttons
 		importButton.setOnAction(this);
 		exportButton.setOnAction(this);
 		clearButton.setOnAction(this);
 		helpButton.setOnAction(this);
 		undoButton.setOnAction(this);
 		
+		//Canvas
+		canvas.setOnMouseClicked(event -> {//Check if user clicked on a person in the network
+			double canvX = event.getX() - (canvas.getWidth() / 2);
+			double canvY = event.getY() - (canvas.getHeight() / 2);
+			ArrayList<Person> people = this.placeHolderGetPersons();
+			for(Person p : people) {
+				double upperXRange = p.getPosX() + .707*RADIUS;
+				double lowerXRange = p.getPosX() - .707*RADIUS;
+				double upperYRange = p.getPosY() - .707*RADIUS;
+				double lowerYRange = p.getPosY() + .707*RADIUS;
+				if(canvX > lowerXRange && canvX < upperXRange && 
+						canvY < lowerYRange && canvY > upperYRange) {
+					focusUser = p.getName();//change to new focusUser
+					drawGraph(p.getName());//redraw the graph with the new focusUser
+				}
+			}
+		});
+		
+		//Textfield controls and Event handlers
 		
 		//Apply css ids and classes
 		title.setId("title");
@@ -236,6 +301,10 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 	}
 
+	//
+	private void canvasClick(double x, double y) {
+		
+	}
 	
 	public void handle(ActionEvent event) {
 		if(event.getSource()==importButton) {
@@ -253,6 +322,8 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		if(event.getSource()==undoButton) {
 			//TODO:
 			// Undo the action
+			drawGraph(focusUser);//currently a placeholder for testing drawGraph, remove later!
+			System.out.println("Undo pressed.");
 		}
 	}
 	
@@ -307,6 +378,123 @@ public class Main extends Application implements EventHandler<ActionEvent> {
     	return dialog.getContentText();
     }
     
+    private void drawGraph(String focus) {
+    	//Initialize a fresh canvas, leave the old one for garbage collection
+    	//canvas = new Canvas(width1, GRAPH_HEIGHT);
+    	//Redefine the GraphicsContext and clear the old canvas
+    	GraphicsContext gc = canvas.getGraphicsContext2D();
+    	gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+    	
+    	double midX = canvas.getWidth() / 2;
+    	double midY = canvas.getHeight() / 2;
+    	
+    	//Get list of relationship sets from Network Manager given a root node
+    	relationships = placeHolderFriendshipGenerator();
+    	focusUser = focus; //placeholder replace with getFocus();
+    	HashSet<Person> visited = new HashSet<Person>();
+    	
+    	//DEBUG: Remove later
+		for (int i = 0; i < relationships.size(); i++) {
+			System.out.print("Relationship " + i + " contains:");
+			for (Person p : relationships.get(i)) {
+				System.out.print(p.getName());
+			}
+			System.out.println();
+		}
+        
+		// for each relationship
+		for (int i = 0; i < relationships.size(); i++) {
+			String[] persons = new String[2];
+			double[] coords = new double[4];
+			boolean secondLoop = false;
+			for (Person p : relationships.get(i)) {// there should only ever be 2 Person items in a set
+				if (secondLoop == false) {
+					persons[0] = p.getName();
+					coords[0] = p.getPosX();
+					coords[1] = p.getPosY();
+				} else {
+					persons[1] = p.getName();
+					coords[2] = p.getPosX();
+					coords[3] = p.getPosY();
+				}
+				secondLoop = true;
+				if(!visited.contains(p)) {//Add visited nodes to visited
+					visited.add(p);
+				}
+			} // draw the line between the points
+			gc.setStroke(Color.BLACK);
+			gc.setLineWidth(1.5);
+			//System.out.println("Printing " + persons[0] + " to " + persons[1]);
+			gc.strokeLine(midX + coords[0], midY + coords[1], midX + coords[2], midY + coords[3]);
+		} // relationship
+
+		// Draw a circle for each person
+		double yNameOffset = 3.75;//arbitrary value that seems to drop the text far enough
+		for(Person p : visited) {
+			if(p.getName().equals(focusUser)) {//if the person is the focusUser draw them in softGold
+				gc.setFill(softGold);	
+			}else {//otherwise draw the circle as mildTeal
+			gc.setFill(mildTeal);
+			}
+			//fillOval(x coord, y coord, oval width, oval height), circles are drawn from upper left corner so subtract radius to center
+			gc.fillOval(midX + (p.getPosX() - RADIUS), midY + (p.getPosY()-RADIUS), 2*RADIUS, 2*RADIUS);
+			gc.setFill(Color.BLACK);//set text color to black
+			gc.setFont(new Font(12.5));
+			double xNameOffset = 3.5*(p.getName().length());//place text on -x axis as a function of its length
+			gc.fillText(p.getName(), midX + p.getPosX() - xNameOffset, midY + p.getPosY() + yNameOffset);
+		}
+
+		// Provide graphControl with reference to new canvas.
+		//graphControl.setContent(canvas);
+	}
+    
+    //Debugging placeholder method.  Creates a fixed list of friendships.
+    private ArrayList<HashSet<Person>> placeHolderFriendshipGenerator() {
+    	//People with arbitrary locations
+    	Person Ross = new Person("Ross", 0, 0); //Ross is assumed to be the root
+    	Person McKenna = new Person("McKenna" , 100, 0);
+    	Person Laura = new Person ("Laura", 0, 100);
+    	Person Megan = new Person("Megan", 0, -100);
+    	
+    	ArrayList<HashSet<Person>> edges = new ArrayList<HashSet<Person>>();
+    	
+    	//Each set represents a relationship.  NetworkManager code will need to ensure sets are only ever size 2.
+    	HashSet<Person> RossMcKenna = new HashSet<Person>();
+    	RossMcKenna.add(Ross);
+    	RossMcKenna.add(McKenna);
+    	HashSet<Person> RossLaura = new HashSet<Person>();
+    	RossLaura.add(Ross);
+    	RossLaura.add(Laura);
+    	HashSet<Person> LauraMcKenna = new HashSet<Person>();
+    	LauraMcKenna.add(Laura);
+    	LauraMcKenna.add(McKenna);
+    	HashSet<Person> RossMegan = new HashSet<Person>();
+    	RossMegan.add(Ross);
+    	RossMegan.add(Megan);
+    	
+    	//Add the edges to the ArrayList
+    	edges.add(RossMcKenna);
+    	edges.add(RossLaura);
+    	edges.add(LauraMcKenna);
+    	edges.add(RossMegan);
+    	
+    	return edges;
+    }
+    
+    //DEBUG method used for testing UI elements
+    private ArrayList<Person> placeHolderGetPersons(){
+    	Person Ross = new Person("Ross", 0, 0); //Ross is assumed to be the root
+    	Person McKenna = new Person("McKenna" , 100, 0);
+    	Person Laura = new Person ("Laura", 0, 100);
+    	Person Megan = new Person("Megan", 0, -100);
+    	
+    	users = new ArrayList<Person>();
+    	users.add(Ross);
+    	users.add(McKenna);
+    	users.add(Laura);
+    	users.add(Megan);
+    	return users;
+    }
     
     private String returnHelpText() {
     	
@@ -314,7 +502,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
     			"TO ADD A USER: Toggle the 'Add' radio button and enter a name\n"
     			+ "TO ADD A FRIENDSHIP: Toggle the 'Add' radio button and enter in TWO names.\n"
     			+ "TO REMOVE A USER: Toggle the 'Remove' radio button and enter a name.\n"
-    			+ "TO REMOVE A FRIENSHIP: Toggle the 'Remove' radio button and enter in TWO names.";
+    			+ "TO REMOVE A FRIENDSHIP: Toggle the 'Remove' radio button and enter in TWO names.";
     	
     	return helptext;
     	
