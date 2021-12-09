@@ -11,8 +11,10 @@
 /**
  * GUI MAJOR TODO:
  * -Increase size of help alert box to display all text 
- * -Set radio button so that add is selected by default
+ * -Set radio buttons so that they change text of submit
  * -Add Exit button that asks if use wants to save before quitting
+ * -Create alert box if text input is > 30 characters or more than 1 word
+ * -Consider making NetworkManager add/remove classes boolean to handle bad inputs
  * 
  * GUI minor TODO:
  * -Make canvas click detection more... round
@@ -90,6 +92,11 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 	Button clearButton;
 	Button undoButton;
 	Button helpButton;
+	Button submit;
+	Button executeFocus;
+	RadioButton addRadio;
+	RadioButton removeRadio;
+	
 	GridPane grid;
 	Canvas canvas;
 	TextField user1Text;
@@ -100,7 +107,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 	//Note - Be CAREFUL where you call/set these.  These should never be updated
 	//without also calling drawGraph and they should always be called together
-	String focusUser = "Ross";//DEBUG - placeholder default
+	String focusUser = "Ross";//DEBUG - placeholder default, replace with ""
 	ArrayList<HashSet<Person>> relationships;
 	ArrayList<Person> users;
 	
@@ -132,27 +139,31 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		Label sideLabel2 = new Label("Enter 1 or 2 names");
 		user1Text = new TextField();
 		user2Text = new TextField();
+		submit = new Button("Submit");
 		Label sideLabel3 = new Label("View friends of:");
 		userFocusText = new TextField();
 		user1Text.setPromptText("person 1");
 		user2Text.setPromptText("person 2");
 		userFocusText.setPromptText("See friends of...");
+		executeFocus = new Button("Change");
 		
 		//Create the radio buttons and contain them in an HBox
 		HBox radioButtons = new HBox();
 		ToggleGroup selectorGroup = new ToggleGroup();
-		RadioButton rb1 = new RadioButton("Add");
-		rb1.setToggleGroup(selectorGroup);
-		RadioButton rb2 = new RadioButton("Remove");
-		rb2.setToggleGroup(selectorGroup);
-		radioButtons.getChildren().addAll(rb1, rb2);
+		addRadio = new RadioButton("Add");
+		addRadio.setToggleGroup(selectorGroup);
+		removeRadio = new RadioButton("Remove");
+		removeRadio.setToggleGroup(selectorGroup);
+		addRadio.setSelected(true);
+		radioButtons.getChildren().addAll(addRadio, removeRadio);
 		radioButtons.setAlignment(Pos.CENTER);
 		radioButtons.setSpacing(smallMargin);
 		//Configure the sideBar
 		sideBar.setAlignment(Pos.TOP_CENTER);
 		sideBar.setSpacing(smallMargin);
 		//Add controls to the sideBar
-		sideBar.getChildren().addAll(sideLabel1, radioButtons, sideLabel2, user1Text, user2Text, sideLabel3, userFocusText);
+		sideBar.getChildren().addAll(sideLabel1, radioButtons, sideLabel2, user1Text, user2Text, 
+				submit, sideLabel3, userFocusText, executeFocus);
 		
 		//Declare controls for the bottomBox
 		importButton = new Button("Import Network");
@@ -251,6 +262,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		clearButton.setOnAction(this);
 		helpButton.setOnAction(this);
 		undoButton.setOnAction(this);
+		submit.setOnAction(this);
 		
 		//Canvas
 		canvas.setOnMouseClicked(event -> {//Check if user clicked on a person in the network
@@ -271,6 +283,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		});
 		
 		//Textfield controls and Event handlers
+		System.out.println(user1Text.getText());
 		
 		//Apply css ids and classes
 		title.setId("title");
@@ -325,7 +338,55 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 			drawGraph(focusUser);//currently a placeholder for testing drawGraph, remove later!
 			System.out.println("Undo pressed.");
 		}
+		if(event.getSource()==submit) {
+			executeSubmission();
+		}
+			
 	}
+	
+	/**
+	 * Handles behavior of clicking "Submit" and processing the text fields to add or remove users/relationships from the graph
+	 */
+	private void executeSubmission() {
+		if(addRadio.isSelected()) {//add mode
+			if(!user1Text.getText().isBlank() && user2Text.getText().isBlank()) {//only user1Text is populated
+				if(!network.addUser(user1Text.getText().trim())) {
+					//TODO: alert reminding user of formatting limits
+				}
+			}else if(user1Text.getText().isBlank() && !user2Text.getText().isBlank()){//only user2Text is populated
+				if(!network.addUser(user2Text.getText().trim())) {
+					//TODO: alert reminding user of formatting limits
+				}
+			}else if(!user1Text.getText().isBlank() && !user2Text.getText().isBlank()) {//both fields have text
+				if(!network.addFriendship(user1Text.getText().trim(), user2Text.getText().trim())) {
+					//TODO: alert reminding user of formatting limits
+				}
+			}else {
+				//do nothing if both fields are blank
+			}
+		}else {//remove mode
+			if(!user1Text.getText().isBlank() && user2Text.getText().isBlank()) {//only user1Text is populated
+				if(!network.removeUser(user1Text.getText().trim())) {
+					//TODO: alert reminding user of formatting limits
+				}
+				
+			}else if(user1Text.getText().isBlank() && !user2Text.getText().isBlank()){//only user2Text is populated
+				if(!network.removeUser(user2Text.getText().trim())) {
+					//TODO: alert reminding user of formatting limits
+				}
+			}else if(!user1Text.getText().isBlank() && !user2Text.getText().isBlank()) {//both fields have text
+				if(!network.removeFriendship(user1Text.getText().trim(), user2Text.getText().trim())) {
+					//TODO: alert reminding user of formatting limits
+				}
+			}else {
+				//do nothing if both fields are blank
+			}
+		}
+		//Blank out text fields
+		user1Text.setText("");
+		user2Text.setText("");
+	}//executeSubmission
+	
 	
     private void showAlerts(Alert.AlertType type, Window owner, String header, String headerMsg) {
         Alert alert = new Alert(type);
