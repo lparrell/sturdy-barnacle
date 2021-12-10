@@ -318,11 +318,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 	}
 
-	//
-	private void canvasClick(double x, double y) {
-		
-	}
-	
 	public void handle(ActionEvent event) {
 		if(event.getSource()==importButton) {
 			String importpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), true);
@@ -470,54 +465,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 		// Provide graphControl with reference to new canvas.
 		//graphControl.setContent(canvas);
-	}
+	}//drawGraph
     
-    //Debugging placeholder method.  Creates a fixed list of friendships.
-    private ArrayList<HashSet<Person>> placeHolderFriendshipGenerator() {
-    	//People with arbitrary locations
-    	Person Ross = new Person("Ross", 0, 0); //Ross is assumed to be the root
-    	Person McKenna = new Person("McKenna" , 100, 0);
-    	Person Laura = new Person ("Laura", 0, 100);
-    	Person Megan = new Person("Megan", 0, -100);
-    	
-    	ArrayList<HashSet<Person>> edges = new ArrayList<HashSet<Person>>();
-    	
-    	//Each set represents a relationship.  NetworkManager code will need to ensure sets are only ever size 2.
-    	HashSet<Person> RossMcKenna = new HashSet<Person>();
-    	RossMcKenna.add(Ross);
-    	RossMcKenna.add(McKenna);
-    	HashSet<Person> RossLaura = new HashSet<Person>();
-    	RossLaura.add(Ross);
-    	RossLaura.add(Laura);
-    	HashSet<Person> LauraMcKenna = new HashSet<Person>();
-    	LauraMcKenna.add(Laura);
-    	LauraMcKenna.add(McKenna);
-    	HashSet<Person> RossMegan = new HashSet<Person>();
-    	RossMegan.add(Ross);
-    	RossMegan.add(Megan);
-    	
-    	//Add the edges to the ArrayList
-    	edges.add(RossMcKenna);
-    	edges.add(RossLaura);
-    	edges.add(LauraMcKenna);
-    	edges.add(RossMegan);
-    	
-    	return edges;
-    }
-    
-    //DEBUG method used for testing UI elements
-    private ArrayList<Person> placeHolderGetPersons(){
-    	Person Ross = new Person("Ross", 0, 0); //Ross is assumed to be the root
-    	Person McKenna = new Person("McKenna" , 100, 0);
-    	Person Laura = new Person ("Laura", 0, 100);
-    	Person Megan = new Person("Megan", 0, -100);
-    	
-    	users = new ArrayList<Person>();
-    	users.add(Ross);
-    	users.add(McKenna);
-    	users.add(Laura);
-    	users.add(Megan);
-    	return users;
-    }
-    
-}
+}//GUI
