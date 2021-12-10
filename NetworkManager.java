@@ -93,7 +93,25 @@ public class NetworkManager {
 	
 	/**
 	 * Sets new start or 'root' member for the graph.
+	 * 
+	 * The user must be in the network to become the new focus user.
+	 * 
+	 * @return - true if user is in network, false if not
 	 */
+	public boolean changeFocus(String name) {
+		if(!validString(name)) {
+			return false;
+		}
+		boolean inGraph = false; 
+		for(String p : this.getAllUsers()) {
+			if(p.equals(name)) {
+				inGraph = true;
+				focusUser = name;
+			}
+		}
+		return inGraph;
+	}
+	
 	public void setFocus(String name) {
 		focusUser = name;
 	}
@@ -151,7 +169,7 @@ public class NetworkManager {
 		}
 		graph.removeEdge(name1, name2);
 		if(name1.equals(focusUser)) {
-			//TODO: figure out how to handle this
+			//TODO: figure out how to handle this, prompt the user to enter a new focus user?
 		}
 		if(name2.equals(focusUser)) {
 			//TODO: figure out how to handle this
@@ -176,13 +194,13 @@ public class NetworkManager {
 	////////////////////////////////////////////////////////
 	////////////////End of Wrapper methods//////////////////
 	////////////////////////////////////////////////////////
-
+	
 	/**
 	 * Confirms whether the string passed into add/remove methods is
-	 * <= 30 characters and has only 1 word
+	 * <= 32 characters and has only 1 word
 	 */
 	private boolean validString(String input) {
-		if(input.length() > 30) {
+		if(input.length() > 32) {
 			return false;
 		}
 		String sentence = input;
