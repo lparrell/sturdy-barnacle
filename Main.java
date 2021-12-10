@@ -107,6 +107,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 	TextField userFocusText;
 	
 	NetworkManager network = new NetworkManager();
+	UIDialog uiDialog = new UIDialog();
 
 	//Note - Be CAREFUL where you call/set these.  These should never be updated
 	//without also calling drawGraph and they should always be called together
@@ -324,16 +325,16 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 	
 	public void handle(ActionEvent event) {
 		if(event.getSource()==importButton) {
-			String importpath = showImportExportBox(grid.getScene().getWindow(), true);
+			String importpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), true);
 		}
 		if(event.getSource()==exportButton) {
-			String exportpath = showImportExportBox(grid.getScene().getWindow(), false);
+			String exportpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), false);
 		}
 		if(event.getSource()==clearButton) {
-			showAlerts(Alert.AlertType.CONFIRMATION, grid.getScene().getWindow(),"Success!","Success! Social Network Cleared.");
+			uiDialog.showAlerts(Alert.AlertType.CONFIRMATION, grid.getScene().getWindow(),"Success!","Success! Social Network Cleared.");
 		}
 		if(event.getSource()==helpButton) {
-			showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(),"How to...",returnHelpText());
+			uiDialog.showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(),"How to...",uiDialog.returnHelpText());
 		}
 		//DEBUG: right now Undo is sort of a garbage pail for debugging, remove all this when implementing Undo
 		if(event.getSource()==undoButton) {//button clicked to undo most recent change
@@ -401,106 +402,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		user2Text.setText("");
 	}//executeSubmission
 	
-	
-    private void showAlerts(Alert.AlertType type, Window owner, String header, String headerMsg) {
-        Alert alert = new Alert(type);
-        alert.setTitle(header);
-        alert.setHeaderText(null);
-        alert.setContentText(headerMsg);
-        alert.initOwner(owner);
-        alert.show();
-    }
-    
-    private String showImportExportBox(Window owner, Boolean isImport) {
-    	
-    	TextInputDialog dialog = new TextInputDialog();
-    	
-    	String text = "import";
-    	if (!isImport) { text = "export"; }
-    	
-    	dialog.setHeaderText("Enter an " + text + " file path:");
-    	dialog.initOwner(owner);
-    	Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
-    	
-    	okButton.setOnAction(new EventHandler<ActionEvent>() {
-    		
-			@Override
-			public void handle(ActionEvent arg0) {
-				if (dialog.getResult().isEmpty()) {
-					showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Information Required.","Information required to continue: you need to enter a file path.");
-				}
-				
-				if (!dialog.getResult().isEmpty()) {
-					
-					//@Mckenna:
-					//TODO: Gracefully catch ImportFormatException and display message to user
-					// if file path is invalid or unable to be interpreted by system
-					// then load or export file based on user selection
-					
-					// if (importFormatException):
-					// showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Error","Error");
-					String filepath = dialog.getResult();
-					
-					if (isImport) {
-						showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Nice","You entered: " + filepath);
-					}
-					
-					if (!isImport) { // if it's not import, it's export
-						//showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Nice","You entered: " + filepath);
-						showExportCloseDialog(dialog.getOwner());
-					}
-
-				}
-			}
-    	});
-
-    	dialog.showAndWait();
-    	return dialog.getContentText();
-    }
-    
-    private void showExportCloseDialog(Window owner) {
-
-    	ButtonType bChoice1 = new ButtonType("Save", ButtonData.OK_DONE);
-    	ButtonType bChoice2 = new ButtonType("Exit without Save", ButtonData.FINISH);
-
-    	Dialog<String> buttonDialog = new Dialog<String>();
-
-    	buttonDialog.setTitle("File processed successfully!");
-    	buttonDialog.setHeaderText(null);
-    	buttonDialog.setContentText("Would you like to save the file, or exit without saving?");
-    	buttonDialog.initOwner(owner);
-    	buttonDialog.getDialogPane().getButtonTypes().add(bChoice2);
-    	buttonDialog.getDialogPane().getButtonTypes().add(bChoice1);
-    	buttonDialog.setResultConverter(dialogButton -> {
-    		  if (dialogButton == bChoice1) {
-    		   return "SAVE";
-    		  }
-    		  if (dialogButton == bChoice2) {
-       		   return "EXIT";
-       		  }
-    		  return null;
-    		 });
-
-    	buttonDialog.show();
-
-    	Button saveButton = (Button) buttonDialog.getDialogPane().lookupButton(bChoice1);
-    	Button exitButton = (Button) buttonDialog.getDialogPane().lookupButton(bChoice2);
-
-    	saveButton.setOnAction(new EventHandler<ActionEvent>() {
-
-			@Override
-			public void handle(ActionEvent arg0) {
-				if (buttonDialog.getResult() == "SAVE") {
-					//TODO: Save the file. 
-					System.out.println("File saved.");
-				}
-				else if (buttonDialog.getResult().equals("EXIT")) {
-					System.out.println("exit");
-				}
-			}
-    	});
-
-    }
     
     private void drawGraph() {
     	//Initialize a fresh canvas, leave the old one for garbage collection
@@ -619,17 +520,4 @@ public class Main extends Application implements EventHandler<ActionEvent> {
     	return users;
     }
     
-    private String returnHelpText() {
-    	
-    	String helptext =
-    			"TO ADD A USER: Toggle the 'Add' radio button and enter a name\n"
-    			+ "TO ADD A FRIENDSHIP: Toggle the 'Add' radio button and enter in TWO names.\n"
-    			+ "TO REMOVE A USER: Toggle the 'Remove' radio button and enter a name.\n"
-    			+ "TO REMOVE A FRIENDSHIP: Toggle the 'Remove' radio button and enter in TWO names.";
-    	
-    	return helptext;
-    	
-    	
-    }
-	
 }
