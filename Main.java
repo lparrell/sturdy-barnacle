@@ -405,8 +405,8 @@ public class Main extends Application implements EventHandler<ActionEvent> {
         alert.initOwner(owner);
         alert.show();
     }
-    
-    private String showImportExportBox(Window owner, Boolean isImport) {
+	
+private String showImportExportBox(Window owner, Boolean isImport) {
     	
     	TextInputDialog dialog = new TextInputDialog();
     	
@@ -427,9 +427,14 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 				
 				if (!dialog.getResult().isEmpty()) {
 					
-					//TODO: Gracefully catch IOException and display message to user
+					//@Mckenna:
+					//TODO: Gracefully catch ImportFormatException and display message to user
 					// if file path is invalid or unable to be interpreted by system
 					// then load or export file based on user selection
+					
+					// if (importFormatException):
+					// showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Error","Error");
+					
 					String filepath = dialog.getResult();
 					
 					if (isImport) {
@@ -437,7 +442,8 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 					}
 					
 					if (!isImport) { // if it's not import, it's export
-						showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Nice","You entered: " + filepath);
+						//showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Nice","You entered: " + filepath);
+						showExportCloseDialog(dialog.getOwner());
 					}
 
 				}
@@ -447,6 +453,51 @@ public class Main extends Application implements EventHandler<ActionEvent> {
     	dialog.showAndWait();
     	return dialog.getContentText();
     }
+	
+private void showExportCloseDialog(Window owner) {
+    	
+    	ButtonType bChoice1 = new ButtonType("Save", ButtonData.OK_DONE);
+    	ButtonType bChoice2 = new ButtonType("Exit without Save", ButtonData.FINISH);
+    	
+    	Dialog<String> buttonDialog = new Dialog<String>();
+    	
+    	buttonDialog.setTitle("File processed successfully!");
+    	buttonDialog.setHeaderText(null);
+    	buttonDialog.setContentText("Would you like to save the file, or exit without saving?");
+    	buttonDialog.initOwner(owner);
+    	buttonDialog.getDialogPane().getButtonTypes().add(bChoice2);
+    	buttonDialog.getDialogPane().getButtonTypes().add(bChoice1);
+    	buttonDialog.setResultConverter(dialogButton -> {
+    		  if (dialogButton == bChoice1) {
+    		   return "SAVE";
+    		  }
+    		  if (dialogButton == bChoice2) {
+       		   return "EXIT";
+       		  }
+    		  return null;
+    		 });
+    	
+    	buttonDialog.show();
+    	
+    	Button saveButton = (Button) buttonDialog.getDialogPane().lookupButton(bChoice1);
+    	Button exitButton = (Button) buttonDialog.getDialogPane().lookupButton(bChoice2);
+    	
+    	saveButton.setOnAction(new EventHandler<ActionEvent>() {
+    		
+			@Override
+			public void handle(ActionEvent arg0) {
+				if (buttonDialog.getResult() == "SAVE") {
+					//TODO: Save the file. 
+					System.out.println("File saved.");
+				}
+				else if (buttonDialog.getResult().equals("EXIT")) {
+					System.out.println("exit");
+				}
+			}
+    	});
+    	
+    }
+    
     
     private void drawGraph(String focus) {
     	//Initialize a fresh canvas, leave the old one for garbage collection
