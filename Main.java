@@ -24,6 +24,7 @@
 package application;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -327,75 +328,95 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		}
 		if(event.getSource()==clearButton) {
 			uiDialog.showAlerts(Alert.AlertType.CONFIRMATION, grid.getScene().getWindow(),"Success!","Success! Social Network Cleared.");
+			network.clearGraph();
+			drawGraph();
 		}
 		if(event.getSource()==helpButton) {
 			uiDialog.showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(),"How to...",uiDialog.returnHelpText());
 		}
 		//DEBUG: right now Undo is sort of a garbage pail for debugging, remove all this when implementing Undo
 		if(event.getSource()==undoButton) {//button clicked to undo most recent change
-			//TODO:
-			// Undo the action
-			//drawGraph(focusUser);//currently a placeholder for testing drawGraph, remove later!
+			//TODO: Undo the action
 			System.out.println("Undo pressed.");
 			network.testStaticGraph();
-			this.drawGraph();
+			drawGraph();
 		}
 		if(event.getSource()==submit) {//button clicked to add or remove graph elements
 			executeSubmission();
 		}
 		if(event.getSource()==executeFocus) {//button clicked to change focus user
-			/*
-			 * if(!network.changeFocus(executeFocus.getText().trim())) { //TODO: create
-			 * alert box warning user that input was not in graph }
-			 */
-			//DEBUG: Commented out for milestone submission.
-			//drawGraph(network.getFocus());
+			String text3 = userFocusText.getText().trim();
+			if(!network.validString(text3) || !network.getAllUsers().contains(text3)) {//if Change Focus input is invalid or not in the graph...
+				//TODO: Alert the user regarding the input.
+			}else {
+			network.changeFocus(text3);
+			drawGraph();
+			}
 		}
 			
 	}
 	
 	/**
-	 * Handles behavior of clicking "Submit" and processing the text fields to add or remove users/relationships from the graph
+	 * Handles behavior of clicking "Submit" and processing the text fields to add
+	 * or remove users/relationships from the graph
 	 */
 	private void executeSubmission() {
-		if(addRadio.isSelected()) {//add mode
-			if(!user1Text.getText().isBlank() && user2Text.getText().isBlank()) {//only user1Text is populated
-				if(!network.addUser(user1Text.getText().trim())) {
-					//TODO: alert reminding user of formatting limits
+		String text1 = user1Text.getText().trim();
+		String text2 = user2Text.getText().trim();
+
+		if (addRadio.isSelected()) {// add mode
+			if (!text1.isBlank() && text2.isBlank()) {// only user1Text is populated
+				if (!network.validString(text1)) {
+					// TODO: alert reminding user of formatting limits
+				} else {
+					network.addUser(text1);
+					drawGraph();
 				}
-			}else if(user1Text.getText().isBlank() && !user2Text.getText().isBlank()){//only user2Text is populated
-				if(!network.addUser(user2Text.getText().trim())) {
-					//TODO: alert reminding user of formatting limits
+			} else if (text1.isBlank() && !text2.isBlank()) {// only user2Text is populated
+				if (!network.validString(text2)) {
+					// TODO: alert reminding user of formatting limits
+				} else {
+					network.addUser(text2);
+					drawGraph();
 				}
-			}else if(!user1Text.getText().isBlank() && !user2Text.getText().isBlank()) {//both fields have text
-				if(!network.addFriendship(user1Text.getText().trim(), user2Text.getText().trim())) {
-					//TODO: alert reminding user of formatting limits
+			} else if (!text1.isBlank() && !text2.isBlank()) {// both fields have text
+				if (!network.validString(text1) || !network.validString(text2)) {
+					// TODO: alert reminding user of formatting limits
+				}else {
+					network.addFriendship(text1, text2);
+					drawGraph();
 				}
-			}else {
-				//do nothing if both fields are blank
+			} else {
+				
 			}
-		}else {//remove mode
-			if(!user1Text.getText().isBlank() && user2Text.getText().isBlank()) {//only user1Text is populated
-				if(!network.removeUser(user1Text.getText().trim())) {
-					//TODO: alert reminding user of formatting limits
+		} else {// remove mode
+			if (!text1.isBlank() && text2.isBlank()) {// only user1Text is populated
+				if (!network.validString(text1)) {
+					// TODO: alert reminding user of formatting limits
+				}else {
+					network.removeUser(text1);
+					drawGraph();
 				}
 				
-			}else if(user1Text.getText().isBlank() && !user2Text.getText().isBlank()){//only user2Text is populated
-				if(!network.removeUser(user2Text.getText().trim())) {
-					//TODO: alert reminding user of formatting limits
+			} else if (text1.isBlank() && !text2.isBlank()) {// only user2Text is populated
+				if (!network.validString(text2)) {
+					// TODO: alert reminding user of formatting limits
+				}else {
+					network.removeUser(text2);
+					drawGraph();
 				}
-			}else if(!user1Text.getText().isBlank() && !user2Text.getText().isBlank()) {//both fields have text
-				if(!network.removeFriendship(user1Text.getText().trim(), user2Text.getText().trim())) {
-					//TODO: alert reminding user of formatting limits
+			} else if (!text1.isBlank() && !text2.isBlank()) {// both fields have text
+				if (!network.removeFriendship(text1, text2)) {
+					// TODO: alert reminding user of formatting limits
 				}
-			}else {
-				//do nothing if both fields are blank
+			} else {
+				// do nothing if both fields are blank
 			}
 		}
-		//Blank out text fields
+		// Blank out text fields
 		user1Text.setText("");
 		user2Text.setText("");
-	}//executeSubmission
+	}// executeSubmission
 	
     
     private void drawGraph() {
@@ -410,16 +431,16 @@ public class Main extends Application implements EventHandler<ActionEvent> {
     	
     	//Get list of relationship sets from Network Manager given a root node
     	relationships = network.getFriendships();
-    	HashSet<Person> visited = new HashSet<Person>();
+    	HashMap<String,Person> users = network.getConnectedUsers();
     	
-    	//DEBUG: Remove later
-		for (int i = 0; i < relationships.size(); i++) {
-			System.out.print("Relationship " + i + " contains:");
-			for (Person p : relationships.get(i)) {
-				System.out.print(p.getName());
-			}
-			System.out.println();
-		}
+    	//HashSet<Person> visited = new HashSet<Person>(); //Keeps track of which lines have been drawn.
+    	
+		/*
+		 * //DEBUG: Remove later for (int i = 0; i < relationships.size(); i++) {
+		 * System.out.print("Relationship " + i + " contains:"); for (Person p :
+		 * relationships.get(i)) { System.out.print(p.getName()); }
+		 * System.out.println(); }
+		 */
         
 		// for each relationship
 		for (int i = 0; i < relationships.size(); i++) {
@@ -437,9 +458,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 					coords[3] = p.getPosY();
 				}
 				secondLoop = true;
-				if(!visited.contains(p)) {//Add visited nodes to visited
-					visited.add(p);
-				}
 			} // draw the line between the points
 			gc.setStroke(Color.BLACK);
 			gc.setLineWidth(1.5);
@@ -449,7 +467,10 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 		// Draw a circle for each person
 		double yNameOffset = 3.75;//arbitrary value that seems to drop the text far enough
-		for(Person p : visited) {
+		
+		Set<String> connectedUserNames = users.keySet();
+		for(String name : connectedUserNames) {
+			Person p = users.get(name);
 			if(p.getName().equals(network.getFocus())) {//if the person is the focusUser draw them in softGold
 				gc.setFill(softGold);	
 			}else {//otherwise draw the circle as mildTeal
@@ -462,7 +483,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 			double xNameOffset = 3.5*(p.getName().length());//place text on -x axis as a function of its length
 			gc.fillText(p.getName(), midX + p.getPosX() - xNameOffset, midY + p.getPosY() + yNameOffset);
 		}
-
+		System.out.println("Debug: bottom of draw");
 		// Provide graphControl with reference to new canvas.
 		//graphControl.setContent(canvas);
 	}//drawGraph
