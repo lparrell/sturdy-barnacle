@@ -3,12 +3,24 @@ package application;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 
 public class NetworkManager {
-	private UndirectedGraph graph;
-	String focusUser;
+	private UndirectedGraph graph; //The underlying graph
+	String focusUser; //The user who the network is focused on
+	Random rnd = new Random();
+	
+	//Set of people currently in a network with focusUser
+	HashMap<String, Person> currentlyConnectedPeople;
+	ArrayList<HashSet<Person>> currentlyConnectedFriends;
+	//currently connected variables will contain a subset of the vertices in a disconnected graph
 	
 	/**
 	 * default no-argument constructor for NetworkManager
@@ -18,6 +30,8 @@ public class NetworkManager {
 	public NetworkManager() {
         graph = new UndirectedGraph();
         focusUser = "";
+        currentlyConnectedPeople = new HashMap<String, Person>();
+        currentlyConnectedFriends = new ArrayList<HashSet<Person>>();
     }
 	
 	/**
@@ -92,7 +106,7 @@ public class NetworkManager {
 	}
 	
 	/**
-	 * Sets new start or 'root' member for the graph.
+	 * Changes the focus member of the graph.  Resets the network graph.
 	 * 
 	 * The user must be in the network to become the new focus user.
 	 * 
@@ -103,15 +117,25 @@ public class NetworkManager {
 			return false;
 		}
 		boolean inGraph = false; 
-		for(String p : this.getAllUsers()) {
+		for(String p : graph.getAllVertices()) {
 			if(p.equals(name)) {
 				inGraph = true;
 				focusUser = name;
 			}
 		}
+		if(inGraph == false) {
+			return false;
+		}
+		this.clearNetwork();
+		this.createNewPeople();
+		this.updateFriendships();
 		return inGraph;
 	}
 	
+	/**
+	 * Sets new start or 'root' member for the graph.
+	 * @param name
+	 */
 	public void setFocus(String name) {
 		focusUser = name;
 	}
@@ -210,5 +234,122 @@ public class NetworkManager {
 		}
 		return true;
 	}
+	
+
+	/**
+	 * Performs a breadth-first traversal of the graph from focusUser
+	 * 
+	 * @param focusUser - precondition: focusUser is in the graph
+	 * @return - returns a list of all nodes that can be reached from focusUser
+	 */
+	private ArrayList<String> BFTraversal(String focusUser){ 
+		LinkedList<String> queue = new LinkedList<String>(); //LinkedList implements deque
+		ArrayList<String> visited = new ArrayList<String>();
+		
+		visited.add(focusUser);
+		queue.addFirst(focusUser); //enqueue
+		while(!queue.isEmpty()) {
+			String current = queue.removeLast();
+			for(String v : graph.getAdjacentVerticesOf(current)) {
+				if(!visited.contains(v)) {
+					visited.add(v);
+					queue.addFirst(v);
+				}//end if v not visited
+			}// end for every successor of v
+		}//end while queue not empty
+		return visited;	
+	}//BFTraversal
+	
+	/**
+	 * Checks if there are any names in the graph connected to focusUser
+	 * that have not been added to currentlyConnectedPeople.  
+	 * 
+	 * Creates a new Person and generates (X,Y) coords before adding to HashMap
+	 * @return
+	 */
+	private void createNewPeople(){
+		ArrayList<String> traversalResults = BFTraversal(focusUser);
+		for(String name : traversalResults) {
+			if(!currentlyConnectedPeople.keySet().contains(name)) {
+				if(name.equals(focusUser)){
+					currentlyConnectedPeople.put(name, new Person(name, 0, 0));
+				}else {
+				double [] coords = getNextCoords();
+				double nextX = coords[0];
+				double nextY = coords[1];
+				currentlyConnectedPeople.put(name, new Person(name, nextX, nextY));
+				}
+			}
+		}
+	}//createNewPeople
+	
+	/**
+	 * Generates X and Y coordinates
+	 * 
+	 * Currently just randomly generates X-Y coords within the canvas
+	 * @return
+	 */
+	private double[] getNextCoords() {
+		double[] coords = new double[2]; 
+		coords[0] = (double) rnd.nextInt(720) - 360; //x
+		coords[1] = (double) rnd.nextInt(360) - 180; //y
+		return coords;
+	}
+	
+	/**
+	 * Checks all users in currentlyConnectedPeople and creates a list of their
+	 * relationship sets by referencing the underlying graph.
+	 */
+	private void updateFriendships() {
+		for(String p : currentlyConnectedPeople.keySet()) {
+			List<String> friends = graph.getAdjacentVerticesOf(p);
+			for(String f : friends) {
+				HashSet<Person> friendship = new HashSet<Person>();
+				friendship.add(currentlyConnectedPeople.get(f));
+				friendship.add(currentlyConnectedPeople.get(p));
+				if(!currentlyConnectedFriends.contains(friendship)) {
+					currentlyConnectedFriends.add(friendship);
+				}
+			}
+		}
+	}
+	
+	public ArrayList<HashSet<Person>> getFriendships(){
+		return currentlyConnectedFriends;
+	}
+	
+	public HashMap<String, Person> getConnectedUsers(){
+		return currentlyConnectedPeople;
+	}
+	
+	/**
+	 * Resets the graph at the network level while leaving the underlying UndirectedGraph
+	 * unaltered.  
+	 */
+	public void clearNetwork() {
+		currentlyConnectedPeople.clear();
+		currentlyConnectedFriends.clear();
+	}
+	
+	//Debug method, remove later
+	public void testStaticGraph() {
+		this.setFocus("Ross");
+		graph.printGraph();
+		this.createNewPeople();
+		this.updateFriendships();
+		for(String P : currentlyConnectedPeople.keySet()) {
+			System.out.println(currentlyConnectedPeople.get(P).getName()+ " X: " +currentlyConnectedPeople.get(P).getPosX()+
+					" Y: " +currentlyConnectedPeople.get(P).getPosY());
+		}
+		System.out.println("Now printing friendships.");
+		for(HashSet<Person> friendship: currentlyConnectedFriends) {
+			for(Person person : friendship) {
+				System.out.print(person.getName()+ " ");
+			}
+			System.out.println();
+		}
+	}
+	
+	
 	
 }
