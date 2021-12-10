@@ -18,7 +18,7 @@
  * 
  * GUI minor TODO:
  * -Make canvas click detection more... round
- * 
+ * -Figure out a way to resize canvas dynamically to accomodate large graphs
  */
 
 package application;
@@ -263,6 +263,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		helpButton.setOnAction(this);
 		undoButton.setOnAction(this);
 		submit.setOnAction(this);
+		executeFocus.setOnAction(this);
 		
 		//Canvas
 		canvas.setOnMouseClicked(event -> {//Check if user clicked on a person in the network
@@ -332,14 +333,22 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		if(event.getSource()==helpButton) {
 			showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(),"How to...",returnHelpText());
 		}
-		if(event.getSource()==undoButton) {
+		if(event.getSource()==undoButton) {//button clicked to undo most recent change
 			//TODO:
 			// Undo the action
 			drawGraph(focusUser);//currently a placeholder for testing drawGraph, remove later!
 			System.out.println("Undo pressed.");
 		}
-		if(event.getSource()==submit) {
+		if(event.getSource()==submit) {//button clicked to add or remove graph elements
 			executeSubmission();
+		}
+		if(event.getSource()==executeFocus) {//button clicked to change focus user
+			/*
+			 * if(!network.changeFocus(executeFocus.getText().trim())) { //TODO: create
+			 * alert box warning user that input was not in graph }
+			 */
+			//DEBUG: Commented out for milestone submission.
+			//drawGraph(network.getFocus());
 		}
 			
 	}
