@@ -102,6 +102,8 @@ public class NetworkManager {
 	 * Sets graph equal to a new empty graph
 	 */
 	public void clearGraph() {
+		this.clearNetwork();
+		this.setFocus("");
 		graph = new UndirectedGraph();
 	}
 	
@@ -112,24 +114,15 @@ public class NetworkManager {
 	 * 
 	 * @return - true if user is in network, false if not
 	 */
-	public boolean changeFocus(String name) {
-		if(!validString(name)) {
+	public boolean changeFocus(String name) { 
+		if(graph.getAllVertices().contains(name) == false) {
 			return false;
 		}
-		boolean inGraph = false; 
-		for(String p : graph.getAllVertices()) {
-			if(p.equals(name)) {
-				inGraph = true;
-				focusUser = name;
-			}
-		}
-		if(inGraph == false) {
-			return false;
-		}
+		this.setFocus(name);
 		this.clearNetwork();
 		this.createNewPeople();
 		this.updateFriendships();
-		return inGraph;
+		return true;
 	}
 	
 	/**
@@ -151,40 +144,83 @@ public class NetworkManager {
 	////////////////////////////////////////////////////////
 	//Wrapper methods for interacting with UndirectedGraph//
 	////////////////////////////////////////////////////////
+	
+	/**
+	 * Attempts to add a name to the underlying graph.
+	 * If the name parameter is not a valid string 
+	 * 
+	 * 
+	 */
 	public boolean addUser(String name) {
-		if(!validString(name)) {
+		int initialUsers = graph.order();
+		graph.addVertex(name);
+		System.out.println("Adding: " +name);
+		int currentUsers = graph.order();
+		
+		//if this is the first user successfully added to an empty graph, make it the focus
+		if(initialUsers == 0 && currentUsers == 1) {
+			this.setFocus(name);
+		}
+		//update the Network graph 
+		createNewPeople();
+		updateFriendships();
+		
+		if(currentUsers > initialUsers) {
+			return true;
+		}
+		else {
 			return false;
 		}
-		graph.addVertex(name);
-		if(focusUser.equals("")) {//if initial user entered, set focus
-			setFocus(name);
-		}
-		return true;
 	}
 
 	public boolean addFriendship(String name1, String name2) {
-		if(!validString(name1) || !validString(name2)) {
+		int initialUsers = graph.order();
+		int initialEdges = graph.size();
+		graph.addEdge(name1, name2);
+		int currentUsers = graph.order();
+		int currentEdges = graph.size();
+		
+		if(initialUsers == 0 && currentUsers > 0) {
+			this.setFocus(name1);
+		}
+		System.out.println("Adding: " +name1+ " and " +name2);
+		//update the Network graph 
+		createNewPeople();
+		updateFriendships();
+		
+		if(currentEdges > initialEdges) {
+			return true;
+		}
+		else {
 			return false;
 		}
-		graph.addEdge(name1, name2);
-		if(focusUser.equals("")) {//if initial users entered, set focus
-			setFocus(name1);
-		}
-		return true;
 	}
 
+	/**
+	 * Removes the user from the underlying graph and modifies the network graph.
+	 * 
+	 * If the last user is removed, sets focusUser to ""
+	 * 
+	 * If the focus user is removed 
+	 * @param name
+	 * @return
+	 */
 	public boolean removeUser(String name) {
-		if(!validString(name)) {
-			return false;
-		}
-		graph.removeVertex(name);
-		if(name.equals(focusUser)) {
-			//TODO: figure out how to handle this
-		}
-		if(this.getNumUsers() == 0) {
-			setFocus("");
-		}
-		return true;
+		int initialUsers = graph.order();
+		graph.removeVertex(name); // attempt to remove the node
+		int currentUsers = graph.order();
+		if (currentUsers < initialUsers) {// if removal is successful
+			if (name.equals(this.focusUser)) {
+				System.out.println("DEBUG: error, you attempted to remove the focusUser");
+			} else {// if removal is not the focus user...
+				System.out.println("DEBUG: removing a non-focus user");
+				clearNetwork();
+				createNewPeople();
+				updateFriendships();	
+			}
+			return true;
+		} // if graph.removeVertex fails
+		return false;
 	}
 
 	public boolean removeFriendship(String name1, String name2) {
@@ -223,7 +259,7 @@ public class NetworkManager {
 	 * Confirms whether the string passed into add/remove methods is
 	 * <= 32 characters and has only 1 word
 	 */
-	private boolean validString(String input) {
+	public boolean validString(String input) {
 		if(input.length() > 32) {
 			return false;
 		}
@@ -250,7 +286,9 @@ public class NetworkManager {
 		queue.addFirst(focusUser); //enqueue
 		while(!queue.isEmpty()) {
 			String current = queue.removeLast();
+			//System.out.println("BFTraversal current: " +current);
 			for(String v : graph.getAdjacentVerticesOf(current)) {
+				//System.out.println("BFTraversal v: " +v);
 				if(!visited.contains(v)) {
 					visited.add(v);
 					queue.addFirst(v);
@@ -333,10 +371,15 @@ public class NetworkManager {
 	
 	//Debug method, remove later
 	public void testStaticGraph() {
-		this.setFocus("Ross");
-		graph.printGraph();
-		this.createNewPeople();
-		this.updateFriendships();
+		//Print all users in the underlying graph
+		System.out.print("Users in underlying graph: ");
+		for(String p : graph.getAllVertices()) {
+			System.out.print(p+ " ");
+		}
+		System.out.println();
+		System.out.println("Focus user is " +this.getFocus());
+		
+		//Print all people currently in the network level graph
 		for(String P : currentlyConnectedPeople.keySet()) {
 			System.out.println(currentlyConnectedPeople.get(P).getName()+ " X: " +currentlyConnectedPeople.get(P).getPosX()+
 					" Y: " +currentlyConnectedPeople.get(P).getPosY());
@@ -348,6 +391,7 @@ public class NetworkManager {
 			}
 			System.out.println();
 		}
+		System.out.println("End of test.");
 	}
 	
 	
