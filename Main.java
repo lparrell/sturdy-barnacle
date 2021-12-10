@@ -26,6 +26,7 @@ package application;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 //CS400 Final Project
@@ -41,9 +42,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogEvent;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
@@ -61,6 +60,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.Dialog;
 
 public class Main extends Application implements EventHandler<ActionEvent> {
 	private List<String> args;
@@ -109,7 +110,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 	//Note - Be CAREFUL where you call/set these.  These should never be updated
 	//without also calling drawGraph and they should always be called together
-	String focusUser = "Ross";//DEBUG - placeholder default, replace with ""
 	ArrayList<HashSet<Person>> relationships;
 	ArrayList<Person> users;
 	
@@ -271,22 +271,22 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		canvas.setOnMouseClicked(event -> {//Check if user clicked on a person in the network
 			double canvX = event.getX() - (canvas.getWidth() / 2);
 			double canvY = event.getY() - (canvas.getHeight() / 2);
-			ArrayList<Person> people = this.placeHolderGetPersons();
-			for(Person p : people) {
+			Set<String> keyNames = network.getConnectedUsers().keySet();
+			for(String name : keyNames) {
+				Person p = network.getConnectedUsers().get(name); 
 				double upperXRange = p.getPosX() + .707*RADIUS;
 				double lowerXRange = p.getPosX() - .707*RADIUS;
 				double upperYRange = p.getPosY() - .707*RADIUS;
 				double lowerYRange = p.getPosY() + .707*RADIUS;
 				if(canvX > lowerXRange && canvX < upperXRange && 
 						canvY < lowerYRange && canvY > upperYRange) {
-					focusUser = p.getName();//change to new focusUser
-					drawGraph(p.getName());//redraw the graph with the new focusUser
+					network.changeFocus(p.getName());//change to new focusUser
+					drawGraph();//redraw the graph with the new focusUser
 				}
 			}
 		});
 		
 		//Textfield controls and Event handlers
-		System.out.println(user1Text.getText());
 		
 		//Apply css ids and classes
 		title.setId("title");
@@ -335,11 +335,14 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		if(event.getSource()==helpButton) {
 			showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(),"How to...",returnHelpText());
 		}
+		//DEBUG: right now Undo is sort of a garbage pail for debugging, remove all this when implementing Undo
 		if(event.getSource()==undoButton) {//button clicked to undo most recent change
 			//TODO:
 			// Undo the action
-			drawGraph(focusUser);//currently a placeholder for testing drawGraph, remove later!
+			//drawGraph(focusUser);//currently a placeholder for testing drawGraph, remove later!
 			System.out.println("Undo pressed.");
+			network.testStaticGraph();
+			this.drawGraph();
 		}
 		if(event.getSource()==submit) {//button clicked to add or remove graph elements
 			executeSubmission();
@@ -407,8 +410,8 @@ public class Main extends Application implements EventHandler<ActionEvent> {
         alert.initOwner(owner);
         alert.show();
     }
-	
-private String showImportExportBox(Window owner, Boolean isImport) {
+    
+    private String showImportExportBox(Window owner, Boolean isImport) {
     	
     	TextInputDialog dialog = new TextInputDialog();
     	
@@ -436,7 +439,6 @@ private String showImportExportBox(Window owner, Boolean isImport) {
 					
 					// if (importFormatException):
 					// showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Error","Error");
-					
 					String filepath = dialog.getResult();
 					
 					if (isImport) {
@@ -455,14 +457,14 @@ private String showImportExportBox(Window owner, Boolean isImport) {
     	dialog.showAndWait();
     	return dialog.getContentText();
     }
-	
-private void showExportCloseDialog(Window owner) {
-    	
+    
+    private void showExportCloseDialog(Window owner) {
+
     	ButtonType bChoice1 = new ButtonType("Save", ButtonData.OK_DONE);
     	ButtonType bChoice2 = new ButtonType("Exit without Save", ButtonData.FINISH);
-    	
+
     	Dialog<String> buttonDialog = new Dialog<String>();
-    	
+
     	buttonDialog.setTitle("File processed successfully!");
     	buttonDialog.setHeaderText(null);
     	buttonDialog.setContentText("Would you like to save the file, or exit without saving?");
@@ -478,14 +480,14 @@ private void showExportCloseDialog(Window owner) {
        		  }
     		  return null;
     		 });
-    	
+
     	buttonDialog.show();
-    	
+
     	Button saveButton = (Button) buttonDialog.getDialogPane().lookupButton(bChoice1);
     	Button exitButton = (Button) buttonDialog.getDialogPane().lookupButton(bChoice2);
-    	
+
     	saveButton.setOnAction(new EventHandler<ActionEvent>() {
-    		
+
 			@Override
 			public void handle(ActionEvent arg0) {
 				if (buttonDialog.getResult() == "SAVE") {
@@ -497,11 +499,10 @@ private void showExportCloseDialog(Window owner) {
 				}
 			}
     	});
-    	
+
     }
     
-    
-    private void drawGraph(String focus) {
+    private void drawGraph() {
     	//Initialize a fresh canvas, leave the old one for garbage collection
     	//canvas = new Canvas(width1, GRAPH_HEIGHT);
     	//Redefine the GraphicsContext and clear the old canvas
@@ -512,8 +513,7 @@ private void showExportCloseDialog(Window owner) {
     	double midY = canvas.getHeight() / 2;
     	
     	//Get list of relationship sets from Network Manager given a root node
-    	relationships = placeHolderFriendshipGenerator();
-    	focusUser = focus; //placeholder replace with getFocus();
+    	relationships = network.getFriendships();
     	HashSet<Person> visited = new HashSet<Person>();
     	
     	//DEBUG: Remove later
@@ -554,7 +554,7 @@ private void showExportCloseDialog(Window owner) {
 		// Draw a circle for each person
 		double yNameOffset = 3.75;//arbitrary value that seems to drop the text far enough
 		for(Person p : visited) {
-			if(p.getName().equals(focusUser)) {//if the person is the focusUser draw them in softGold
+			if(p.getName().equals(network.getFocus())) {//if the person is the focusUser draw them in softGold
 				gc.setFill(softGold);	
 			}else {//otherwise draw the circle as mildTeal
 			gc.setFill(mildTeal);
