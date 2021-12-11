@@ -26,7 +26,13 @@ public class UndirectedGraph implements UndirectedGraphADT {
 		}
 
 		public void remove() {
+
+			for (Vertex v : vertices) {
+				v.linkedVertices.remove(this);
+			}
+			
 			this.linkedVertices = null; //remove successor pointers
+			
 			vertices.remove(this);
 			verticesList.remove(this.vertex);
 		}
@@ -97,7 +103,7 @@ public class UndirectedGraph implements UndirectedGraphADT {
 		
 	}
 	
-	private boolean containVertex(String vertex) {
+	public boolean containVertex(String vertex) {
 		Set<String> set = this.getAllVertices();
 		if (set == null) {
 			return false;
@@ -228,5 +234,6 @@ public class UndirectedGraph implements UndirectedGraphADT {
 	public int order() {
 		  return this.getAllVerticeObjects().size();
 	}
+	
 
 }
