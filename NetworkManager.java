@@ -207,11 +207,35 @@ public class NetworkManager {
 	 */
 	public boolean removeUser(String name) {
 		int initialUsers = graph.order();
+		ArrayList<String> connected = BFTraversal(this.getFocus());
 		graph.removeVertex(name); // attempt to remove the node
 		int currentUsers = graph.order();
 		if (currentUsers < initialUsers) {// if removal is successful
 			if (name.equals(this.focusUser)) {
-				System.out.println("DEBUG: error, you attempted to remove the focusUser");
+				if (currentUsers == 0) {// if this is the last user in the true graph
+					this.setFocus("");
+					clearNetwork();
+				} else {// change focus to another user
+					if (currentlyConnectedPeople.size() > 1) {// if there are other users in the network graph
+						connected.remove(focusUser);
+						currentlyConnectedPeople.remove(focusUser);
+						
+						setFocus(connected.get(0));
+						clearNetwork();
+						createNewPeople();
+						updateFriendships();
+					} else {// if focusUser is last in the sub-graph
+						clearNetwork();
+						
+						Set<String> otherUsers = graph.getAllVertices();
+						String[] otherUsersArray = otherUsers.toArray(new String[graph.order()]);
+						int next = rnd.nextInt(otherUsersArray.length);
+						setFocus(otherUsersArray[next]);
+
+						createNewPeople();
+						updateFriendships();
+					}
+				}
 			} else {// if removal is not the focus user...
 				System.out.println("DEBUG: removing a non-focus user");
 				clearNetwork();
@@ -224,20 +248,22 @@ public class NetworkManager {
 	}
 
 	public boolean removeFriendship(String name1, String name2) {
-		if(!validString(name1) || !validString(name2)) {
-			return false;
-		}
+		int initialEdges = graph.size();
 		graph.removeEdge(name1, name2);
-		if(name1.equals(focusUser)) {
-			//TODO: figure out how to handle this, prompt the user to enter a new focus user?
+		ArrayList<String> connected = BFTraversal(this.getFocus());
+ 		int currentEdges = graph.size();
+		if(currentEdges < initialEdges) {
+			if(!connected.contains(name1)) {
+				currentlyConnectedPeople.remove(name1);
+			}
+			if(!connected.contains(name2)) {
+				currentlyConnectedPeople.remove(name2);
+			}
+			currentlyConnectedFriends.clear();
+			updateFriendships();
+			return true;
 		}
-		if(name2.equals(focusUser)) {
-			//TODO: figure out how to handle this
-		}
-		if(this.getNumUsers() == 0) {
-			setFocus("");
-		}
-		return true;
+		return false;
 	}
 
 	public int getNumUsers() {
@@ -286,9 +312,9 @@ public class NetworkManager {
 		queue.addFirst(focusUser); //enqueue
 		while(!queue.isEmpty()) {
 			String current = queue.removeLast();
-			//System.out.println("BFTraversal current: " +current);
+			System.out.println("BFTraversal current: " +current);
 			for(String v : graph.getAdjacentVerticesOf(current)) {
-				//System.out.println("BFTraversal v: " +v);
+				System.out.println("BFTraversal v: " +v);
 				if(!visited.contains(v)) {
 					visited.add(v);
 					queue.addFirst(v);
