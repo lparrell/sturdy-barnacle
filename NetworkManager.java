@@ -1,9 +1,7 @@
 package application;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,49 +54,35 @@ public class NetworkManager {
 		try {
 			File file = new File(filepath);
 			Scanner scanner = new Scanner(file);
-			int count=0;
-			ArrayList<String[]> array = new ArrayList<String[]>();
-			
+
 			while (scanner.hasNextLine()) {
-				count = count + 1;
 				String data = scanner.nextLine();
 				String input[] = data.split(" ");
-				
-				array.add(input);//Add the array to the arraylist so we can loop again after
-				
-				if (input.length <2 || input.length >3) {
-					//String output = "File is invalid at line "+count;
-					throw new ImportFormatException("File is invalid at line "+count);
-				}
-			}
-			for(int j=0; j<array.size(); j++) {
-				if (array.get(j)[0].equals("a")) {
-					for (int i = 1; i < array.get(j).length; i++) {
-						addUser(array.get(j)[i]);
+				if (input[0].equals("a")) {
+					for (int i = 1; i < input.length; i++) {
+						addUser(input[i]);
 					}
-					if (array.get(j).length > 2) {
-						addFriendship(array.get(j)[1], array.get(j)[2]);
+					if (input.length > 2) {
+						addFriendship(input[1], input[2]);
 					}
 				}
-				if (array.get(j)[0].equals("r")) {
-					if (array.get(j).length == 3) {
-						removeFriendship(array.get(j)[1], array.get(j)[2]);
+				if (input[0].equals("r")) {
+					if (input.length == 3) {
+						removeFriendship(input[1], input[2]);
 					} else {
-						for (int i = 1; i < array.get(j).length; i++) {
-							removeUser(array.get(j)[i]);
+						for (int i = 1; i < input.length; i++) {
+							removeUser(input[i]);
 						}
 					}
 				}
-				if (array.get(j)[0].equals("s")) {
-					setFocus(array.get(j)[1]);
+				if (input[0].equals("s")) {
+					setFocus(input[1]);
 				}
 			}
 			scanner.close();
 		} catch (FileNotFoundException e) {
 			// What do we want to do here? is it easy to trigger a popup from here to say
 			// "invalid file, please try again?"
-			System.out.println("File not found error");
-			//TODO: throw a popup saying the file doesn't exist
 		}
 	}
 	
@@ -110,7 +94,7 @@ public class NetworkManager {
 	 */
 	public void exportGraph(String filename) {
 		for (int i = 0; i < graph.size(); i++) {
-			
+
 		}
 	}
 	
@@ -118,6 +102,8 @@ public class NetworkManager {
 	 * Sets graph equal to a new empty graph
 	 */
 	public void clearGraph() {
+		this.clearNetwork();
+		this.setFocus("");
 		graph = new UndirectedGraph();
 	}
 	
@@ -128,24 +114,15 @@ public class NetworkManager {
 	 * 
 	 * @return - true if user is in network, false if not
 	 */
-	public boolean changeFocus(String name) {
-		if(!validString(name)) {
+	public boolean changeFocus(String name) { 
+		if(graph.getAllVertices().contains(name) == false) {
 			return false;
 		}
-		boolean inGraph = false; 
-		for(String p : graph.getAllVertices()) {
-			if(p.equals(name)) {
-				inGraph = true;
-				focusUser = name;
-			}
-		}
-		if(inGraph == false) {
-			return false;
-		}
+		this.setFocus(name);
 		this.clearNetwork();
 		this.createNewPeople();
 		this.updateFriendships();
-		return inGraph;
+		return true;
 	}
 	
 	/**
@@ -167,57 +144,126 @@ public class NetworkManager {
 	////////////////////////////////////////////////////////
 	//Wrapper methods for interacting with UndirectedGraph//
 	////////////////////////////////////////////////////////
+	
+	/**
+	 * Attempts to add a name to the underlying graph.
+	 * If the name parameter is not a valid string 
+	 * 
+	 * 
+	 */
 	public boolean addUser(String name) {
-		if(!validString(name)) {
+		int initialUsers = graph.order();
+		graph.addVertex(name);
+		System.out.println("Adding: " +name);
+		int currentUsers = graph.order();
+		
+		//if this is the first user successfully added to an empty graph, make it the focus
+		if(initialUsers == 0 && currentUsers == 1) {
+			this.setFocus(name);
+		}
+		//update the Network graph 
+		createNewPeople();
+		updateFriendships();
+		
+		if(currentUsers > initialUsers) {
+			return true;
+		}
+		else {
 			return false;
 		}
-		graph.addVertex(name);
-		if(focusUser.equals("")) {//if initial user entered, set focus
-			setFocus(name);
-		}
-		return true;
 	}
 
 	public boolean addFriendship(String name1, String name2) {
-		if(!validString(name1) || !validString(name2)) {
+		int initialUsers = graph.order();
+		int initialEdges = graph.size();
+		graph.addEdge(name1, name2);
+		int currentUsers = graph.order();
+		int currentEdges = graph.size();
+		
+		if(initialUsers == 0 && currentUsers > 0) {
+			this.setFocus(name1);
+		}
+		System.out.println("Adding: " +name1+ " and " +name2);
+		//update the Network graph 
+		createNewPeople();
+		updateFriendships();
+		
+		if(currentEdges > initialEdges) {
+			return true;
+		}
+		else {
 			return false;
 		}
-		graph.addEdge(name1, name2);
-		if(focusUser.equals("")) {//if initial users entered, set focus
-			setFocus(name1);
-		}
-		return true;
 	}
 
+	/**
+	 * Removes the user from the underlying graph and modifies the network graph.
+	 * 
+	 * If the last user is removed, sets focusUser to ""
+	 * 
+	 * If the focus user is removed 
+	 * @param name
+	 * @return
+	 */
 	public boolean removeUser(String name) {
-		if(!validString(name)) {
-			return false;
-		}
-		graph.removeVertex(name);
-		if(name.equals(focusUser)) {
-			//TODO: figure out how to handle this
-		}
-		if(this.getNumUsers() == 0) {
-			setFocus("");
-		}
-		return true;
+		int initialUsers = graph.order();
+		ArrayList<String> connected = BFTraversal(this.getFocus());
+		graph.removeVertex(name); // attempt to remove the node
+		int currentUsers = graph.order();
+		if (currentUsers < initialUsers) {// if removal is successful
+			if (name.equals(this.focusUser)) {
+				if (currentUsers == 0) {// if this is the last user in the true graph
+					this.setFocus("");
+					clearNetwork();
+				} else {// change focus to another user
+					if (currentlyConnectedPeople.size() > 1) {// if there are other users in the network graph
+						connected.remove(focusUser);
+						currentlyConnectedPeople.remove(focusUser);
+						
+						setFocus(connected.get(0));
+						clearNetwork();
+						createNewPeople();
+						updateFriendships();
+					} else {// if focusUser is last in the sub-graph
+						clearNetwork();
+						
+						Set<String> otherUsers = graph.getAllVertices();
+						String[] otherUsersArray = otherUsers.toArray(new String[graph.order()]);
+						int next = rnd.nextInt(otherUsersArray.length);
+						setFocus(otherUsersArray[next]);
+
+						createNewPeople();
+						updateFriendships();
+					}
+				}
+			} else {// if removal is not the focus user...
+				System.out.println("DEBUG: removing a non-focus user");
+				clearNetwork();
+				createNewPeople();
+				updateFriendships();	
+			}
+			return true;
+		} // if graph.removeVertex fails
+		return false;
 	}
 
 	public boolean removeFriendship(String name1, String name2) {
-		if(!validString(name1) || !validString(name2)) {
-			return false;
-		}
+		int initialEdges = graph.size();
 		graph.removeEdge(name1, name2);
-		if(name1.equals(focusUser)) {
-			//TODO: figure out how to handle this, prompt the user to enter a new focus user?
+		ArrayList<String> connected = BFTraversal(this.getFocus());
+ 		int currentEdges = graph.size();
+		if(currentEdges < initialEdges) {
+			if(!connected.contains(name1)) {
+				currentlyConnectedPeople.remove(name1);
+			}
+			if(!connected.contains(name2)) {
+				currentlyConnectedPeople.remove(name2);
+			}
+			currentlyConnectedFriends.clear();
+			updateFriendships();
+			return true;
 		}
-		if(name2.equals(focusUser)) {
-			//TODO: figure out how to handle this
-		}
-		if(this.getNumUsers() == 0) {
-			setFocus("");
-		}
-		return true;
+		return false;
 	}
 
 	public int getNumUsers() {
@@ -239,7 +285,7 @@ public class NetworkManager {
 	 * Confirms whether the string passed into add/remove methods is
 	 * <= 32 characters and has only 1 word
 	 */
-	private boolean validString(String input) {
+	public boolean validString(String input) {
 		if(input.length() > 32) {
 			return false;
 		}
@@ -266,7 +312,9 @@ public class NetworkManager {
 		queue.addFirst(focusUser); //enqueue
 		while(!queue.isEmpty()) {
 			String current = queue.removeLast();
+			System.out.println("BFTraversal current: " +current);
 			for(String v : graph.getAdjacentVerticesOf(current)) {
+				System.out.println("BFTraversal v: " +v);
 				if(!visited.contains(v)) {
 					visited.add(v);
 					queue.addFirst(v);
@@ -349,16 +397,15 @@ public class NetworkManager {
 	
 	//Debug method, remove later
 	public void testStaticGraph() {
-		this.setFocus("Ross");
-		try {
-			importGraph("C:\\Users\\19204\\Documents\\Java\\Hello_JavaFX17\\application\\testFile.txt");
-		} catch (IOException | ImportFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		//Print all users in the underlying graph
+		System.out.print("Users in underlying graph: ");
+		for(String p : graph.getAllVertices()) {
+			System.out.print(p+ " ");
 		}
-		//graph.printGraph();
-		this.createNewPeople();
-		this.updateFriendships();
+		System.out.println();
+		System.out.println("Focus user is " +this.getFocus());
+		
+		//Print all people currently in the network level graph
 		for(String P : currentlyConnectedPeople.keySet()) {
 			System.out.println(currentlyConnectedPeople.get(P).getName()+ " X: " +currentlyConnectedPeople.get(P).getPosX()+
 					" Y: " +currentlyConnectedPeople.get(P).getPosY());
@@ -370,6 +417,7 @@ public class NetworkManager {
 			}
 			System.out.println();
 		}
+		System.out.println("End of test.");
 	}
 	
 	
