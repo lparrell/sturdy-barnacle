@@ -54,35 +54,49 @@ public class NetworkManager {
 		try {
 			File file = new File(filepath);
 			Scanner scanner = new Scanner(file);
-
+			int count=0;
+			ArrayList<String[]> array = new ArrayList<String[]>();
+			
 			while (scanner.hasNextLine()) {
+				count = count + 1;
 				String data = scanner.nextLine();
 				String input[] = data.split(" ");
-				if (input[0].equals("a")) {
-					for (int i = 1; i < input.length; i++) {
-						addUser(input[i]);
+				
+				array.add(input);//Add the array to the arraylist so we can loop again after
+				
+				if (input.length <2 || input.length >3) {
+					//String output = "File is invalid at line "+count;
+					throw new ImportFormatException("File is invalid at line "+count);
+				}
+			}
+			for(int j=0; j<array.size(); j++) {
+				if (array.get(j)[0].equals("a")) {
+					for (int i = 1; i < array.get(j).length; i++) {
+						addUser(array.get(j)[i]);
 					}
-					if (input.length > 2) {
-						addFriendship(input[1], input[2]);
+					if (array.get(j).length > 2) {
+						addFriendship(array.get(j)[1], array.get(j)[2]);
 					}
 				}
-				if (input[0].equals("r")) {
-					if (input.length == 3) {
-						removeFriendship(input[1], input[2]);
+				if (array.get(j)[0].equals("r")) {
+					if (array.get(j).length == 3) {
+						removeFriendship(array.get(j)[1], array.get(j)[2]);
 					} else {
-						for (int i = 1; i < input.length; i++) {
-							removeUser(input[i]);
+						for (int i = 1; i < array.get(j).length; i++) {
+							removeUser(array.get(j)[i]);
 						}
 					}
 				}
-				if (input[0].equals("s")) {
-					setFocus(input[1]);
+				if (array.get(j)[0].equals("s")) {
+					setFocus(array.get(j)[1]);
 				}
 			}
 			scanner.close();
 		} catch (FileNotFoundException e) {
 			// What do we want to do here? is it easy to trigger a popup from here to say
 			// "invalid file, please try again?"
+			System.out.println("File not found error");
+			//TODO: throw a popup saying the file doesn't exist
 		}
 	}
 	
