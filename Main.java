@@ -406,11 +406,15 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 					drawGraph();
 				}
 			} else if (!text1.isBlank() && !text2.isBlank()) {// both fields have text
-				if (!network.removeFriendship(text1, text2)) {
+				if (!network.validString(text1) || !network.validString(text2)) {
 					// TODO: alert reminding user of formatting limits
+				}else {
+					System.out.println("remove reached");
+					network.removeFriendship(text1, text2);
+					drawGraph();
 				}
 			} else {
-				// do nothing if both fields are blank
+				//TODO:??
 			}
 		}
 		// Blank out text fields
@@ -483,7 +487,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 			double xNameOffset = 3.5*(p.getName().length());//place text on -x axis as a function of its length
 			gc.fillText(p.getName(), midX + p.getPosX() - xNameOffset, midY + p.getPosY() + yNameOffset);
 		}
-		System.out.println("Debug: bottom of draw");
+		//System.out.println("Debug: bottom of draw");
 		// Provide graphControl with reference to new canvas.
 		//graphControl.setContent(canvas);
 	}//drawGraph
