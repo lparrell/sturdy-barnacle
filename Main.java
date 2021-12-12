@@ -26,12 +26,16 @@ package application;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 //CS400 Final Project
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
@@ -44,6 +48,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.DialogEvent;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
@@ -105,7 +110,9 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 	Canvas canvas;
 	TextField user1Text;
 	TextField user2Text;
-	TextField userFocusText;
+	ChoiceBox<String> userFocusText;
+	ObservableList<String> userChoices;
+	Label updateText;
 	
 	NetworkManager network = new NetworkManager();
 	UIDialog uiDialog = new UIDialog();
@@ -145,11 +152,16 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		user2Text = new TextField();
 		submit = new Button("Submit");
 		Label sideLabel3 = new Label("View friends of:");
-		userFocusText = new TextField();
+		userFocusText = new ChoiceBox<String>();
+		userChoices = FXCollections.observableArrayList();
+		userFocusText.setItems(userChoices);
+		userFocusText.setMinSize(60,15);
 		user1Text.setPromptText("person 1");
 		user2Text.setPromptText("person 2");
-		userFocusText.setPromptText("See friends of...");
+		//userFocusText.setPromptText("See friends of...");
 		executeFocus = new Button("Change");
+		updateText = new Label();
+		
 		
 		//Create the radio buttons and contain them in an HBox
 		HBox radioButtons = new HBox();
@@ -167,7 +179,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		sideBar.setSpacing(smallMargin);
 		//Add controls to the sideBar
 		sideBar.getChildren().addAll(sideLabel1, radioButtons, sideLabel2, user1Text, user2Text, 
-				submit, sideLabel3, userFocusText, executeFocus);
+				submit, sideLabel3, userFocusText, executeFocus, updateText);
 		
 		//Declare controls for the bottomBox
 		importButton = new Button("Import Network");
@@ -218,6 +230,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		GridPane.setRowSpan(sideBar, 2);
 		GridPane.setHalignment(sideBar, HPos.CENTER);
 		GridPane.setValignment(sideBar, VPos.CENTER);
+	
 		//Graph Position
 		GridPane.setHalignment(graphControl, HPos.CENTER);
 		GridPane.setValignment(graphControl, VPos.CENTER);
@@ -282,7 +295,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 				double lowerYRange = p.getPosY() + .707*RADIUS;
 				if(canvX > lowerXRange && canvX < upperXRange && 
 						canvY < lowerYRange && canvY > upperYRange) {
-					network.changeFocus(p.getName());//change to new focusUser
+					handleChangingFocusUser(p.getName());//change to new focusUser
 					drawGraph();//redraw the graph with the new focusUser
 				}
 			}
@@ -297,6 +310,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		bottomBox.setId("bottomBox");
 		footer.setId("footer");
 		footerLabel.setId("footerLabel");
+		//updateText.setId("updateText");
 		grid.setId("grid");
 		
 		//Apply css to the scene
@@ -327,9 +341,10 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 			String exportpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), false);
 		}
 		if(event.getSource()==clearButton) {
-			uiDialog.showAlerts(Alert.AlertType.CONFIRMATION, grid.getScene().getWindow(),"Success!","Success! Social Network Cleared.");
 			network.clearGraph();
 			drawGraph();
+			uiDialog.showAlerts(Alert.AlertType.CONFIRMATION, grid.getScene().getWindow(),"Success!","Success! Social Network Cleared.");
+			updateText.setText("Social Network Cleared.");
 		}
 		if(event.getSource()==helpButton) {
 			uiDialog.showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(),"How to...",uiDialog.returnHelpText());
@@ -337,7 +352,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		//DEBUG: right now Undo is sort of a garbage pail for debugging, remove all this when implementing Undo
 		if(event.getSource()==undoButton) {//button clicked to undo most recent change
 			//TODO: Undo the action
-			System.out.println("Undo pressed.");
+			updateText.setText("Undo pressed.");
 			network.testStaticGraph();
 			drawGraph();
 		}
@@ -345,13 +360,8 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 			executeSubmission();
 		}
 		if(event.getSource()==executeFocus) {//button clicked to change focus user
-			String text3 = userFocusText.getText().trim();
-			if(!network.validString(text3) || !network.getAllUsers().contains(text3)) {//if Change Focus input is invalid or not in the graph...
-				//TODO: Alert the user regarding the input.
-			}else {
-			network.changeFocus(text3);
-			drawGraph();
-			}
+			String focusUserT = userFocusText.getValue();//userFocusText.getText().trim();
+			handleChangingFocusUser(focusUserT);
 		}
 			
 	}
@@ -367,24 +377,51 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		if (addRadio.isSelected()) {// add mode
 			if (!text1.isBlank() && text2.isBlank()) {// only user1Text is populated
 				if (!network.validString(text1)) {
-					// TODO: alert reminding user of formatting limits
+					updateText.setText(invalidCharHelpText());
 				} else {
-					network.addUser(text1);
+					if (network.addUser(text1) == true) {
+						updateText.setText("Success! Friend added.");
+						userChoices.add(text1);
+					}
+					else {
+						updateText.setText("Sorry! Friend could not be added.");
+					}
 					drawGraph();
+					
 				}
 			} else if (text1.isBlank() && !text2.isBlank()) {// only user2Text is populated
 				if (!network.validString(text2)) {
 					// TODO: alert reminding user of formatting limits
+					updateText.setText(invalidCharHelpText());
 				} else {
-					network.addUser(text2);
+					if (network.addUser(text2) == true) {
+						updateText.setText("Success! Friend added.");
+						userChoices.add(text2);
+					}
+					else {
+						updateText.setText("Sorry! Friend could not be added.");
+					}
 					drawGraph();
+
 				}
 			} else if (!text1.isBlank() && !text2.isBlank()) {// both fields have text
 				if (!network.validString(text1) || !network.validString(text2)) {
-					// TODO: alert reminding user of formatting limits
+					updateText.setText(invalidCharHelpText());
 				}else {
-					network.addFriendship(text1, text2);
+					if (network.addFriendship(text1, text2) == true) {
+						updateText.setText("Success! Friendship added.");
+						if (!userChoices.contains(text1)) {
+							userChoices.add(text1);
+						}
+						if (!userChoices.contains(text2)) {
+							userChoices.add(text2);
+						}
+					}
+					else {
+						updateText.setText("Sorry! Friendship could not be added.");
+					}
 					drawGraph();
+				
 				}
 			} else {
 				
@@ -392,30 +429,49 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		} else {// remove mode
 			if (!text1.isBlank() && text2.isBlank()) {// only user1Text is populated
 				if (!network.validString(text1)) {
-					// TODO: alert reminding user of formatting limits
+					updateText.setText(invalidCharHelpText());
 				}else {
-					network.removeUser(text1);
+					if (network.removeUser(text1) == true) {
+						updateText.setText("Success! Friend removed.");
+						userChoices.remove(text1);
+					}
+					else {
+						updateText.setText("Sorry! Friend could not be removed.");
+					}
 					drawGraph();
 				}
 				
 			} else if (text1.isBlank() && !text2.isBlank()) {// only user2Text is populated
 				if (!network.validString(text2)) {
-					// TODO: alert reminding user of formatting limits
+					updateText.setText(invalidCharHelpText());
 				}else {
-					network.removeUser(text2);
+					if (network.removeUser(text2) == true) {
+						updateText.setText("Success! Friend removed.");
+						userChoices.remove(text2);
+					}
+					else {
+						updateText.setText("Sorry! Friend could not be removed.");
+					}
 					drawGraph();
 				}
 			} else if (!text1.isBlank() && !text2.isBlank()) {// both fields have text
 				if (!network.validString(text1) || !network.validString(text2)) {
-					// TODO: alert reminding user of formatting limits
+					updateText.setText(invalidCharHelpText());
 				}else {
-					System.out.println("remove reached");
-					network.removeFriendship(text1, text2);
+					if (network.removeFriendship(text1, text2) == true) {
+						updateText.setText("Success! Friendship removed.");
+					}
+					else {
+						updateText.setText("  Sorry, friendship couldn't be removed."
+								+ "\n Check that you entered the right names.");
+					}
 					drawGraph();
+
 				}
 			} else {
 				//TODO:??
 			}
+			userFocusText.setValue("");
 		}
 		// Blank out text fields
 		user1Text.setText("");
@@ -491,5 +547,27 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		// Provide graphControl with reference to new canvas.
 		//graphControl.setContent(canvas);
 	}//drawGraph
+    
+    
+    private void handleChangingFocusUser(String focusUserT) {  
+		
+		if(!network.validString(focusUserT) || !network.getAllUsers().contains(focusUserT)) {//if Change Focus input is invalid or not in the graph...
+			//TODO: Alert the user regarding the input.
+			updateText.setText("Focus user invalid.");
+		}
+		else {
+			network.changeFocus(focusUserT);
+			drawGraph();
+			updateText.setText("Focus user set to " + focusUserT + ".");
+		}
+    }
+    
+    
+    private String invalidCharHelpText() {
+    	return "Sorry, that is not a valid user's name."
+				+ "\n   Please enter a name less than 32 \n characters and "
+				+ "no special characters.";
+    }
+    
     
 }//GUI
