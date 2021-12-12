@@ -3,9 +3,12 @@ package application;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -107,9 +110,52 @@ public class NetworkManager {
 	 * @param filename
 	 */
 	public void exportGraph(String filename) {
-		for (int i = 0; i < graph.size(); i++) {
-
+		Set<String> list = graph.getAllVertices();
+		Iterator<String> listIterator = list.iterator();
+		Set<String> singleOutput= new LinkedHashSet<String>();
+		Set<Set<String>> output= new LinkedHashSet<Set<String>>();
+		
+		if (list!=null) {
+			while (listIterator.hasNext()){
+				String user = listIterator.next();
+				List<String> adjacent = graph.getAdjacentVerticesOf(user);
+				if (adjacent.isEmpty()) {
+					singleOutput.add(user);
+					output.add(singleOutput);
+				}
+				for (int i=0; i<adjacent.size(); i++) {
+					singleOutput=new LinkedHashSet<String>();
+					singleOutput.add(user);
+					singleOutput.add(adjacent.get(i));
+					if (!output.contains(singleOutput)) {
+						output.add(singleOutput);
+					}
+				}
+			}
+			//We should now have a set without duplicates of all of the users and their relationships
 		}
+		try {
+			PrintWriter out = new PrintWriter(filename);
+			
+			Iterator<Set<String>> setIterator = output.iterator();
+			while (setIterator.hasNext()) {
+				Set<String> line = new LinkedHashSet<String>();
+				line=setIterator.next();
+				Iterator<String> lineIterator = line.iterator();
+				String outputString="a";
+				while(lineIterator.hasNext()) {
+					String outputPiece=lineIterator.next();
+					outputString =outputString+" "+outputPiece;
+				}
+				out.println(outputString);
+			}
+			out.println("s "+focusUser);
+			out.close();
+		} catch (FileNotFoundException e) {
+			//TODO - need to throw a popup to tell user that it's not a valid filepath
+			e.printStackTrace();
+		}
+		
 	}
 
 	/**
@@ -414,6 +460,7 @@ public class NetworkManager {
 	public void testStaticGraph() {
 		try {
 			importGraph("C:\\Users\\19204\\Documents\\Java\\Hello_JavaFX17\\application\\testFile.txt");
+			exportGraph("String.txt");
 		} catch (IOException | ImportFormatException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
