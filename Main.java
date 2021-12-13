@@ -383,14 +383,15 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 			executeSubmission();
 		}
 		if (event.getSource() == executeFocus) {// button clicked to change focus user
-				String focusUserT = userFocusText.getText().trim();//userFocusText.getText().trim();
+				String focusUserT = userFocusText.getText().trim();
 				handleChangingFocusUser(focusUserT);
-			
+				userFocusText.setText(""); //Clear out after use
 		}
 		if(event.getSource() == focusListButton) {
 			if(userFocusBox.getValue() != null) {
 				String focusUserT = (String) userFocusBox.getValue();
 				handleChangingFocusUser(focusUserT);
+				userFocusBox.setValue(""); //Clear out after use
 			}
 		}
 	}
@@ -410,8 +411,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 				} else {
 					if (network.addUser(text1) == true) {
 						updateText.setText("Success! Friend added.");
-						userChoices.setAll(network.getAllUsers());
-						//userChoices.add(text1);
 					} else {
 						updateText.setText("Sorry! Friend could not be added.");
 					}
@@ -423,8 +422,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 				} else {
 					if (network.addUser(text2) == true) {
 						updateText.setText("Success! Friend added.");
-						userChoices.setAll(network.getAllUsers());
-						//userChoices.add(text2);
 					} else {
 						updateText.setText("Sorry! Friend could not be added.");
 					}
@@ -436,14 +433,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 				} else {
 					if (network.addFriendship(text1, text2) == true) {
 						updateText.setText("Success! Friendship added.");
-						if (!userChoices.contains(text1)) {
-							userChoices.setAll(network.getAllUsers());
-							//userChoices.add(text1);
-						}
-						if (!userChoices.contains(text2)) {
-							userChoices.setAll(network.getAllUsers());
-							//userChoices.add(text2);
-						}
 					} else {
 						updateText.setText("Sorry! Friendship could not be added.");
 					}
@@ -459,8 +448,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 				} else {
 					if (network.removeUser(text1) == true) {
 						updateText.setText("Success! Friend removed.");
-						userChoices.setAll(network.getAllUsers());
-						//userChoices.remove(text1);
 					} else {
 						updateText.setText("Sorry! Friend could not be removed.");
 					}
@@ -473,8 +460,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 				} else {
 					if (network.removeUser(text2) == true) {
 						updateText.setText("Success! Friend removed.");
-						userChoices.setAll(network.getAllUsers());
-						//userChoices.remove(text2);
 					} else {
 						updateText.setText("Sorry! Friend could not be removed.");
 					}
@@ -492,10 +477,11 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 					}
 					drawGraph();
 				}
-			} else {
-				// TODO:??
-			}
+			} 
 		}
+		
+		userChoices.setAll(network.getAllUsers());
+		
 		// Blank out text fields
 		user1Text.setText("");
 		user2Text.setText("");
