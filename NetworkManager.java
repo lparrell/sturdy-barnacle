@@ -3,17 +3,17 @@ package application;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
+import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 
 public class NetworkManager {
 	private UndirectedGraph graph; // The underlying graph
@@ -59,17 +59,14 @@ public class NetworkManager {
 			Scanner scanner = new Scanner(file);
 			int count = 0;
 			ArrayList<String[]> array = new ArrayList<String[]>();
-
 			while (scanner.hasNextLine()) {
 				count = count + 1;
 				String data = scanner.nextLine();
 				String input[] = data.split(" ");
-
 				array.add(input);// Add the array to the arraylist so we can loop again after
-
 				if (input.length < 2 || input.length > 3) {
 					// String output = "File is invalid at line "+count;
-					throw new ImportFormatException("File is invalid at line " + count);
+					throw new ImportFormatException();
 				}
 			}
 			for (int j = 0; j < array.size(); j++) {
@@ -112,19 +109,19 @@ public class NetworkManager {
 	public void exportGraph(String filename) {
 		Set<String> list = graph.getAllVertices();
 		Iterator<String> listIterator = list.iterator();
-		Set<String> singleOutput= new LinkedHashSet<String>();
-		Set<Set<String>> output= new LinkedHashSet<Set<String>>();
-		
-		if (list!=null) {
-			while (listIterator.hasNext()){
+		Set<String> singleOutput = new LinkedHashSet<String>();
+		Set<Set<String>> output = new LinkedHashSet<Set<String>>();
+
+		if (list != null) {
+			while (listIterator.hasNext()) {
 				String user = listIterator.next();
 				List<String> adjacent = graph.getAdjacentVerticesOf(user);
 				if (adjacent.isEmpty()) {
 					singleOutput.add(user);
 					output.add(singleOutput);
 				}
-				for (int i=0; i<adjacent.size(); i++) {
-					singleOutput=new LinkedHashSet<String>();
+				for (int i = 0; i < adjacent.size(); i++) {
+					singleOutput = new LinkedHashSet<String>();
 					singleOutput.add(user);
 					singleOutput.add(adjacent.get(i));
 					if (!output.contains(singleOutput)) {
@@ -132,30 +129,31 @@ public class NetworkManager {
 					}
 				}
 			}
-			//We should now have a set without duplicates of all of the users and their relationships
+			// We should now have a set without duplicates of all of the users and their
+			// relationships
 		}
 		try {
 			PrintWriter out = new PrintWriter(filename);
-			
+
 			Iterator<Set<String>> setIterator = output.iterator();
 			while (setIterator.hasNext()) {
 				Set<String> line = new LinkedHashSet<String>();
-				line=setIterator.next();
+				line = setIterator.next();
 				Iterator<String> lineIterator = line.iterator();
-				String outputString="a";
-				while(lineIterator.hasNext()) {
-					String outputPiece=lineIterator.next();
-					outputString =outputString+" "+outputPiece;
+				String outputString = "a";
+				while (lineIterator.hasNext()) {
+					String outputPiece = lineIterator.next();
+					outputString = outputString + " " + outputPiece;
 				}
 				out.println(outputString);
 			}
-			out.println("s "+focusUser);
+			out.println("s " + focusUser);
 			out.close();
 		} catch (FileNotFoundException e) {
-			//TODO - need to throw a popup to tell user that it's not a valid filepath
+			// TODO - need to throw a popup to tell user that it's not a valid filepath
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	/**
@@ -458,14 +456,7 @@ public class NetworkManager {
 
 	// Debug method, remove later
 	public void testStaticGraph() {
-		try {
-			importGraph("C:\\Users\\19204\\Documents\\Java\\Hello_JavaFX17\\application\\testFile.txt");
-			exportGraph("String.txt");
-		} catch (IOException | ImportFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+		// Print all users in the underlying graph
 		System.out.print("Users in underlying graph: ");
 		for (String p : graph.getAllVertices()) {
 			System.out.print(p + " ");
@@ -473,19 +464,27 @@ public class NetworkManager {
 		System.out.println();
 		System.out.println("Focus user is " + this.getFocus());
 
-		// Print all people currently in the network level graph
-		for (String P : currentlyConnectedPeople.keySet()) {
-			System.out.println(currentlyConnectedPeople.get(P).getName() + " X: "
-					+ currentlyConnectedPeople.get(P).getPosX() + " Y: " + currentlyConnectedPeople.get(P).getPosY());
+		try {
+		System.out.println("testing input1");
+		this.importGraph("input1.txt");
+		System.out.println("testing input2");
+		this.importGraph("input2.txt");
+		System.out.println("testing input3");
+		this.importGraph("input3.txt");
+		//this.importGraph("badinput1.txt");
+		//this.importGraph("badinput2.txt");
+		this.exportGraph("testoutput1.txt");
+		}catch(ImportFormatException e) {
+			System.out.println("ImportFormatException thrown.");
 		}
-		System.out.println("Now printing friendships.");
-		for (HashSet<Person> friendship : currentlyConnectedFriends) {
-			for (Person person : friendship) {
-				System.out.print(person.getName() + " ");
-			}
-			System.out.println();
+		catch(Exception e) {
+			System.out.println(e.getMessage());
 		}
-		System.out.println("End of test.");
+		this.clearNetwork();
+		createNewPeople();
+		updateFriendships();
+		
+		System.out.println("End of testStaticGraph.");
 	}
 
 }
