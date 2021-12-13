@@ -58,7 +58,10 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.scene.control.ButtonBar.ButtonData;
@@ -116,6 +119,10 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 	ComboBox userFocusBox;
 	ObservableList<String> userChoices;
 	Label updateText;
+	Label totalsLabel;
+	int totalUsers;
+	int totalFriendships;
+	int totalConnectedUsers;
 
 	NetworkManager network = new NetworkManager();
 	UIDialog uiDialog = new UIDialog();
@@ -175,6 +182,8 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		userFocusText.setPromptText("See friends of...");
 		executeFocus = new Button("Change");
 		updateText = new Label();
+		updateText.setFont(Font.font(STYLESHEET_CASPIAN, FontPosture.ITALIC, 11));
+		updateText.setLineSpacing(-4.0);
 
 		// Create the radio buttons and contain them in an HBox
 		HBox radioButtons = new HBox();
@@ -204,11 +213,22 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		importButton = new Button("Import Network");
 		exportButton = new Button("Export Network");
 		clearButton = new Button("Clear Network");
+		
+		
+		totalFriendships = 0;
+		totalUsers = 0;
+		totalConnectedUsers = 0;
+		
+		totalsLabel = new Label(updateTotalsLabel(true));
+		totalsLabel.setTextFill(Color.DARKRED);
+		totalsLabel.setFont(Font.font(STYLESHEET_CASPIAN, FontPosture.ITALIC, 11));
+		totalsLabel.setTextAlignment(TextAlignment.CENTER);
+		
 		// Configure bottomBox
 		bottomBox.setSpacing(55);
 		bottomBox.setAlignment(Pos.CENTER);
 		// Add controls to the bottomBox
-		bottomBox.getChildren().addAll(importButton, exportButton, clearButton);
+		bottomBox.getChildren().addAll(totalsLabel, importButton, exportButton, clearButton);
 
 		// Declare controls for the utilities box
 		undoButton = new Button("Undo");
@@ -259,9 +279,9 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		GridPane.setColumnSpan(footer, 2);
 		GridPane.setHalignment(footer, HPos.CENTER);
 
-		///////////////////////
+		 ////////////////////////
 		// GRAPH VISUALIZATION//
-		///////////////////////
+	   ////////////////////////
 
 		// Initialize new canvas and display the initial starting image
 		canvas = new Canvas(width1, GRAPH_HEIGHT);
@@ -278,20 +298,20 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		gc.fillText("Please import a network from file or add a user to begin.", canvas.getWidth() / 2 - 132,
 				canvas.getHeight() / 2);
 
-		///////////////////////////////
-		// Add children to grid object//
+		  ///////////////////////////////
+		 //Add children to grid object//
 		///////////////////////////////
 		grid.getChildren().addAll(title, subTitle, graphControl, sideBar, bottomBox, footer, utilities);
 
-		////////////////////////
-		// Initialize the Scene//
+		  ////////////////////////
+		 //Initialize the Scene//
 		////////////////////////
 		mainScene = new Scene(grid, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-		//////////////////////////////////////////
-		// Associate Controls with Event Handlers//
-		//////////////////////////////////////////
-		// Buttons
+		 //////////////////////////////////////////
+		//Associate Controls with Event Handlers//
+	   //////////////////////////////////////////
+	  // Buttons
 		importButton.setOnAction(this);
 		exportButton.setOnAction(this);
 		clearButton.setOnAction(this);
@@ -365,6 +385,8 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 					"Success! Social Network Cleared.");
 			updateText.setText("Social Network Cleared.");
 			userChoices.setAll(network.getAllUsers());
+			totalsLabel.setText(updateTotalsLabel(true));
+			
 		}
 		if (event.getSource() == helpButton) {
 			uiDialog.showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(), "How to...",
@@ -481,7 +503,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		}
 		
 		userChoices.setAll(network.getAllUsers());
-		
+		totalsLabel.setText(updateTotalsLabel(false));
 		// Blank out text fields
 		user1Text.setText("");
 		user2Text.setText("");
@@ -575,6 +597,20 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 	private String invalidCharHelpText() {
 		return "Sorry, that is not a valid user's name." + "\n   Please enter a name less than 32 \n characters and "
 				+ "no special characters.";
+	}
+	
+	private String updateTotalsLabel(Boolean clear) {
+		if (!clear) {
+			totalUsers = network.getNumUsers();
+			totalFriendships = network.getNumFriendships();
+			totalConnectedUsers = network.currentlyConnectedPeople.size();
+		}
+		else {
+			totalUsers = 0;
+			totalFriendships = 0;
+			totalConnectedUsers = 0;
+		}
+		return (totalUsers+" Users\n"+totalFriendships+" Friendships\n"+totalConnectedUsers+" Connected Users");
 	}
 
 }// GUI
