@@ -1,5 +1,7 @@
 package application;
 
+import java.io.IOException;
+
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
@@ -69,7 +71,7 @@ public class UIDialog {
     	
     }
     
-    public String showImportExportBox(Window owner, Boolean isImport) {
+    public String showImportExportBox(Window owner, Boolean isImport, NetworkManager network) {
     	
     	TextInputDialog dialog = new TextInputDialog();
     	
@@ -100,12 +102,20 @@ public class UIDialog {
 					
 					String filepath = dialog.getResult();
 					
+					// TODO: Test the below for import:
 					if (isImport) {
-						showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Nice","You entered: " + filepath);
+						try {
+							network.importGraph(dialog.getResult());
+						} catch (IOException e) {
+							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Invalid File Input","The specified file, " + filepath + " was not found.");
+						} catch (ImportFormatException e) {
+							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Invalid File Format","The specified file, " + filepath + " had an invalid file format.");
+						}
+						//
 					}
-					
+					// TODO: Test the below for export:
 					if (!isImport) { // if it's not import, it's export
-						//showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Nice","You entered: " + filepath);
+						network.exportGraph(dialog.getResult());
 						showExportCloseDialog(dialog.getOwner());
 					}
 

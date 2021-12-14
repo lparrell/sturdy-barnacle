@@ -54,7 +54,7 @@ public class NetworkManager {
 	 * @throws ImportFormatException - is formatted incorrectly
 	 */
 	public void importGraph(String filepath) throws FileNotFoundException, IOException, ImportFormatException {
-		try {
+		
 			File file = new File(filepath);
 			Scanner scanner = new Scanner(file);
 			int count = 0;
@@ -104,12 +104,7 @@ public class NetworkManager {
 			}
 			System.out.println("");
 			scanner.close();
-		} catch (FileNotFoundException e) {
-			// What do we want to do here? is it easy to trigger a popup from here to say
-			// "invalid file, please try again?"
-			System.out.println("File not found error");
-			// TODO: throw a popup saying the file doesn't exist
-		}
+
 		System.out.println("");
 	}
 

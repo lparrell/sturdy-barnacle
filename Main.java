@@ -372,11 +372,14 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 	public void handle(ActionEvent event) {
 		if (event.getSource() == importButton) {
-			String importpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), true);
+			String importpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), true, network);
+			drawGraph();
 			userChoices.setAll(network.getAllUsers());
+			totalsLabel.setText(updateTotalsLabel(false));
 		}
 		if (event.getSource() == exportButton) {
-			String exportpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), false);
+			String exportpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), false, network);
+			totalsLabel.setText(updateTotalsLabel(false));
 		}
 		if (event.getSource() == clearButton) {
 			network.clearGraph();
@@ -408,12 +411,14 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 				String focusUserT = userFocusText.getText().trim();
 				handleChangingFocusUser(focusUserT);
 				userFocusText.setText(""); //Clear out after use
+				totalsLabel.setText(updateTotalsLabel(false));
 		}
 		if(event.getSource() == focusListButton) {
 			if(userFocusBox.getValue() != null) {
 				String focusUserT = (String) userFocusBox.getValue();
 				handleChangingFocusUser(focusUserT);
 				userFocusBox.setValue(""); //Clear out after use
+				totalsLabel.setText(updateTotalsLabel(false));
 			}
 		}
 	}
