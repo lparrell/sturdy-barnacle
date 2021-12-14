@@ -1,621 +1,497 @@
-/**
- * Course: 			CS400 - Fall 2021
- * Program:			Term Project - Social Network
- * Names: 			<Ross Volkmann, McKenna Stillings, Laura Parrella>
- * Wisc Email: 		<rvolkmann@wisc.edu, mstillings@wisc.edu, lparrella@wisc.edu>
- * Web Sources: 	<http://fxexperience.com/2011/12/styling-fx-buttons-with-css/>
- * Personal Help: 	<none>
- */
-
-/**
- * GUI MAJOR TODO:
- * -Increase size of help alert box to display all text 
- * -Set radio buttons so that they change text of submit
- * -Add Exit button that asks if use wants to save before quitting
- * -Create alert box if text input is > 30 characters or more than 1 word
- * -Consider making NetworkManager add/remove classes boolean to handle bad inputs
- * 
- * GUI minor TODO:
- * -Make canvas click detection more... round
- * -Figure out a way to resize canvas dynamically to accomodate large graphs
- */
-
 package application;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.Set;
+import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 
-//CS400 Final Project
-import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.geometry.HPos;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.geometry.VPos;
-import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.DialogEvent;
-import javafx.scene.control.Label;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.control.ToggleGroup;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
-import javafx.scene.text.TextAlignment;
-import javafx.stage.Stage;
-import javafx.stage.Window;
-import javafx.scene.control.ButtonBar.ButtonData;
-import javafx.scene.control.Dialog;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.SortedList;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.ComboBox;
+public class NetworkManager {
+	private UndirectedGraph graph; // The underlying graph
+	String focusUser; // The user who the network is focused on
+	Random rnd = new Random();
+	ArrayList<String> logList; //exports to a text log recording all changes to the graph
 
-public class Main extends Application implements EventHandler<ActionEvent> {
-	private List<String> args;
+	// Set of people currently in a network with focusUser
+	HashMap<String, Person> currentlyConnectedPeople;
+	ArrayList<HashSet<Person>> currentlyConnectedFriends;
+	// currently connected variables will contain a subset of the vertices in a
+	// disconnected graph
 
-	// Values and Constants used for the layout
-	private static final int WINDOW_WIDTH = 1024;
-	private static final int WINDOW_HEIGHT = 600;
-	private static final String APP_TITLE = "BadgerNet";
-	private static final int GRAPH_HEIGHT = 425;
-	private static final double RADIUS = 30;
-
-	int hGap = 10; // horizontal gap between columns
-	int vGap = 6; // vertical gap between rows
-	int inset = 10; // padding around outside of grid
-	double width1 = (WINDOW_WIDTH / 4) * 3; // Width of column 0
-	double width2 = WINDOW_WIDTH - width1 - hGap - 2 * inset; // Width of column
-	int smallMargin = 14;
-
-	Color softGold = Color.rgb(253, 236, 166);
-	Color mildTeal = Color.rgb(166, 230, 253);
-
-	/////////////////////////////////////////////////
-	// Declare controls, containers, and global vars//
-	/////////////////////////////////////////////////
-	Scene mainScene;
-	Scene importDialogue, exportDialogue;
-	ScrollPane graphControl;
-
-	Button importButton;
-	Button exportButton;
-	Button clearButton;
-	Button undoButton;
-	Button helpButton;
-	Button submit;
-	Button executeFocus;
-	Button focusListButton;
-	RadioButton addRadio;
-	RadioButton removeRadio;
-
-	GridPane grid;
-	Canvas canvas;
-	TextField user1Text;
-	TextField user2Text;
-	TextField userFocusText;
-	//ChoiceBox<String> userFocusBox;
-	ComboBox userFocusBox;
-	ObservableList<String> userChoices;
-	Label updateText;
-	Label totalsLabel;
-	int totalUsers;
-	int totalFriendships;
-	int totalConnectedUsers;
-
-	NetworkManager network = new NetworkManager();
-	UIDialog uiDialog = new UIDialog();
-
-	// Note - Be CAREFUL where you call/set these. These should never be updated
-	// without also calling drawGraph and they should always be called together
-	ArrayList<HashSet<Person>> relationships;
-	ArrayList<Person> users;
-
-	@Override
-	public void start(Stage primaryStage) throws Exception {
-		args = this.getParameters().getRaw();// save the args
-
-		/////////////////////////////////////////////////
-		// Declare the top level controls and containers//
-		/////////////////////////////////////////////////
-		HBox title = new HBox();
-		Label subTitle = new Label("A Social Network");
-		graphControl = new ScrollPane();
-		VBox sideBar = new VBox();// new VBox();
-		HBox bottomBox = new HBox();// new HBox();
-		HBox footer = new HBox();
-		HBox utilities = new HBox();
-
-		// Add labels to HBoxes and set position
-		Label titleLabel = new Label("BadgerNet");
-		title.getChildren().addAll(titleLabel);
-		title.setAlignment(Pos.CENTER);
-		Label footerLabel = new Label("An A10 Production");
-		footer.getChildren().addAll(footerLabel);
-		footer.setAlignment(Pos.CENTER);
-
-		// Declare and configure controls for the sideBar
-		Label sideLabel1 = new Label("Add or Remove from the graph");
-		Label sideLabel2 = new Label("Enter 1 or 2 names");
-		user1Text = new TextField();
-		user2Text = new TextField();
-		submit = new Button("Submit");
-		Label sideLabel3 = new Label("Enter a name to see their network:");
-		Label sideLabel4 = new Label("or select from the dropdown");
-		userFocusText = new TextField();
-
-		//userFocusBox = new ChoiceBox<String>();
-		//userFocusBox.setItems(userChoices);
-		//userFocusBox.setMinSize(60, 15);
-		
-		userChoices = FXCollections.observableArrayList();
-		userFocusBox = new ComboBox(userChoices);
-		
-		focusListButton = new Button("Go");
-		HBox selectFocusHBox = new HBox();
-		selectFocusHBox.getChildren().addAll(userFocusBox, focusListButton);
-		selectFocusHBox.setAlignment(Pos.CENTER);
-
-		user1Text.setPromptText("person 1");
-		user2Text.setPromptText("person 2");
-		userFocusText.setPromptText("See friends of...");
-		executeFocus = new Button("Change");
-		updateText = new Label();
-		updateText.setFont(Font.font(STYLESHEET_CASPIAN, FontPosture.ITALIC, 11));
-		updateText.setLineSpacing(-4.0);
-
-		// Create the radio buttons and contain them in an HBox
-		HBox radioButtons = new HBox();
-		ToggleGroup selectorGroup = new ToggleGroup();
-		addRadio = new RadioButton("Add");
-		addRadio.setToggleGroup(selectorGroup);
-		removeRadio = new RadioButton("Remove");
-		removeRadio.setToggleGroup(selectorGroup);
-		addRadio.setSelected(true);
-		radioButtons.getChildren().addAll(addRadio, removeRadio);
-		radioButtons.setAlignment(Pos.CENTER);
-		radioButtons.setSpacing(smallMargin);
-		// Configure the sideBar
-		sideBar.setAlignment(Pos.TOP_CENTER);
-		sideBar.setSpacing(smallMargin);
-		// Add controls to the sideBar
-		/*
-		 * sideBar.getChildren().addAll(sideLabel3,userFocusText,executeFocus,
-		 * selectFocusHBox, sideLabel1,radioButtons,sideLabel2,
-		 * user1Text,user2Text,submit,updateText);
-		 */
-		
-		sideBar.getChildren().addAll(sideLabel1, radioButtons, sideLabel2, user1Text, user2Text, submit, sideLabel3,
-				userFocusText, executeFocus,sideLabel4, selectFocusHBox, updateText);
-
-		// Declare controls for the bottomBox
-		importButton = new Button("Import Network");
-		exportButton = new Button("Export Network");
-		clearButton = new Button("Clear Network");
-		
-		
-		totalFriendships = 0;
-		totalUsers = 0;
-		totalConnectedUsers = 0;
-		
-		totalsLabel = new Label(updateTotalsLabel(true));
-		totalsLabel.setTextFill(Color.DARKRED);
-		totalsLabel.setFont(Font.font(STYLESHEET_CASPIAN, FontPosture.ITALIC, 11));
-		totalsLabel.setTextAlignment(TextAlignment.CENTER);
-		
-		// Configure bottomBox
-		bottomBox.setSpacing(55);
-		bottomBox.setAlignment(Pos.CENTER);
-		// Add controls to the bottomBox
-		bottomBox.getChildren().addAll(totalsLabel, importButton, exportButton, clearButton);
-
-		// Declare controls for the utilities box
-		undoButton = new Button("Undo");
-		helpButton = new Button("Help");
-		utilities.setSpacing(35);
-		utilities.setAlignment(Pos.CENTER);
-		utilities.getChildren().addAll(undoButton, helpButton);
-
-		/////////////////////////////////////////////
-		// Create the root layout pane as a GridPane//
-		/////////////////////////////////////////////
-		grid = new GridPane();
-		grid.setHgap(hGap);
-		grid.setVgap(vGap);
-		grid.setPadding(new Insets(inset, inset, inset, inset)); // JavaFX geometry import
-		// grid.setGridLinesVisible(true); //TODO: remove later, used for debugging
-
-		// Set the two main column widths -- revise this later if necessary
-		grid.getColumnConstraints().add(new ColumnConstraints(width1));
-		grid.getColumnConstraints().add(new ColumnConstraints(width2));
-
-		// Assign Grid Positions -- reminder: setConstraints(control, col, row)
-		GridPane.setConstraints(title, 0, 0);
-		GridPane.setConstraints(subTitle, 0, 1);
-		GridPane.setConstraints(graphControl, 0, 2);
-		GridPane.setConstraints(sideBar, 1, 2);
-		GridPane.setConstraints(bottomBox, 0, 3);
-		GridPane.setConstraints(footer, 0, 4);
-		GridPane.setConstraints(utilities, 1, 3);
-
-		// Title Position
-		GridPane.setColumnSpan(title, 2);
-		GridPane.setHalignment(title, HPos.CENTER);
-		// Subtitle Position
-		GridPane.setColumnSpan(subTitle, 2);
-		GridPane.setHalignment(subTitle, HPos.CENTER);
-		// SideBox Position
-		GridPane.setRowSpan(sideBar, 2);
-		GridPane.setHalignment(sideBar, HPos.CENTER);
-		GridPane.setValignment(sideBar, VPos.CENTER);
-		// Graph Position
-		GridPane.setHalignment(graphControl, HPos.CENTER);
-		GridPane.setValignment(graphControl, VPos.CENTER);
-		// TODO
-		// BottomBox Position
-		GridPane.setHalignment(bottomBox, HPos.CENTER);
-		// Footer Position
-		GridPane.setColumnSpan(footer, 2);
-		GridPane.setHalignment(footer, HPos.CENTER);
-
-		 ////////////////////////
-		// GRAPH VISUALIZATION//
-	   ////////////////////////
-
-		// Initialize new canvas and display the initial starting image
-		canvas = new Canvas(width1, GRAPH_HEIGHT);
-
-		// Set dimensions of the graphControl
-		graphControl.setPrefViewportHeight(canvas.getHeight());
-		graphControl.setPrefViewportWidth(canvas.getWidth());
-
-		graphControl.setContent(canvas);
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		gc.setFill(Color.BLACK);
-		gc.setFont(new Font(11.5));
-		// 132 is arbitrary constant the approximates length of the displayed String
-		gc.fillText("Please import a network from file or add a user to begin.", canvas.getWidth() / 2 - 132,
-				canvas.getHeight() / 2);
-
-		  ///////////////////////////////
-		 //Add children to grid object//
-		///////////////////////////////
-		grid.getChildren().addAll(title, subTitle, graphControl, sideBar, bottomBox, footer, utilities);
-
-		  ////////////////////////
-		 //Initialize the Scene//
-		////////////////////////
-		mainScene = new Scene(grid, WINDOW_WIDTH, WINDOW_HEIGHT);
-
-		 //////////////////////////////////////////
-		//Associate Controls with Event Handlers//
-	   //////////////////////////////////////////
-	  // Buttons
-		importButton.setOnAction(this);
-		exportButton.setOnAction(this);
-		clearButton.setOnAction(this);
-		helpButton.setOnAction(this);
-		undoButton.setOnAction(this);
-		submit.setOnAction(this);
-		executeFocus.setOnAction(this);
-		focusListButton.setOnAction(this);
-
-		// Canvas
-		canvas.setOnMouseClicked(event -> {// Check if user clicked on a person in the network
-			double canvX = event.getX() - (canvas.getWidth() / 2);
-			double canvY = event.getY() - (canvas.getHeight() / 2);
-			Set<String> keyNames = network.getConnectedUsers().keySet();
-			for (String name : keyNames) {
-				Person p = network.getConnectedUsers().get(name);
-				double upperXRange = p.getPosX() + .707 * RADIUS;
-				double lowerXRange = p.getPosX() - .707 * RADIUS;
-				double upperYRange = p.getPosY() - .707 * RADIUS;
-				double lowerYRange = p.getPosY() + .707 * RADIUS;
-				if (canvX > lowerXRange && canvX < upperXRange && canvY < lowerYRange && canvY > upperYRange) {
-					// network.changeFocus(p.getName());//change to new focusUser
-					handleChangingFocusUser(p.getName());
-					drawGraph();// redraw the graph with the new focusUser
-					break;
-				}
-			}
-		});
-
-		// Textfield controls and Event handlers
-
-		// Apply css ids and classes
-		title.setId("title");
-		titleLabel.setId("titleLabel");
-		subTitle.setId("subTitle");
-		bottomBox.setId("bottomBox");
-		footer.setId("footer");
-		footerLabel.setId("footerLabel");
-		grid.setId("grid");
-
-		// Apply css to the scene
-		String css = this.getClass().getResource("badger.css").toExternalForm();
-		mainScene.getStylesheets().add(css);
-
-		// Add the stuff and set the primary stage
-		primaryStage.setTitle(APP_TITLE);
-		primaryStage.setScene(mainScene);
-		primaryStage.show();
+	/**
+	 * default no-argument constructor for NetworkManager
+	 * 
+	 * initializes an empty UndirectedGraph
+	 */
+	public NetworkManager() {
+		graph = new UndirectedGraph();
+		focusUser = "";
+		currentlyConnectedPeople = new HashMap<String, Person>();
+		currentlyConnectedFriends = new ArrayList<HashSet<Person>>();
+		logList = new ArrayList<String>();
 	}
 
 	/**
-	 * @param args
+	 * Reads input from a text file to create an UndirectedGraph representing a
+	 * social network. Text commands can can: 1) call graph.addVertex(), ex: a user
+	 * 2) call graph.addEdge(), ex: a user1 user2 3) call graph.removeVertex(), ex:
+	 * r user 4) call graph.removeEdge(), ex: r user1 user2 5) call this.setFocus(),
+	 * ex: s user
+	 * 
+	 * //TODO: discuss how to handle bad input as a group
+	 * 
+	 * @param filename - relative filepath to the .txt file the graph is to be
+	 *                 constructed from
+	 * @throws FileNotFoundException - if file path is incorrect
+	 * @throws IOException           - IOException if the give file cannot be read
+	 * @throws ImportFormatException - is formatted incorrectly
 	 */
-	public static void main(String[] args) {
-		launch(args);
+	public void importGraph(String filepath) throws FileNotFoundException, IOException, ImportFormatException {
 
-	}
-
-	public void handle(ActionEvent event) {
-		if (event.getSource() == importButton) {
-			String importpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), true, network);
-			drawGraph();
-			userChoices.setAll(network.getAllUsers());
-			totalsLabel.setText(updateTotalsLabel(false));
-		}
-		if (event.getSource() == exportButton) {
-			String exportpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), false, network);
-			totalsLabel.setText(updateTotalsLabel(false));
-		}
-		if (event.getSource() == clearButton) {
-			network.clearGraph();
-			drawGraph();
-			uiDialog.showAlerts(Alert.AlertType.CONFIRMATION, grid.getScene().getWindow(), "Success!",
-					"Success! Social Network Cleared.");
-			updateText.setText("Social Network Cleared.");
-			userChoices.setAll(network.getAllUsers());
-			totalsLabel.setText(updateTotalsLabel(true));
-			
-		}
-		if (event.getSource() == helpButton) {
-			uiDialog.showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(), "How to...",
-					uiDialog.returnHelpText());
-		}
-		// DEBUG: right now Undo is sort of a garbage pail for debugging, remove all
-		// this when implementing Undo
-		if (event.getSource() == undoButton) {// button clicked to undo most recent change
-			// TODO: Undo the action
-			updateText.setText("Undo pressed.");
-			network.testStaticGraph();
-			drawGraph();
-			userChoices.setAll(network.getAllUsers());
-		}
-		if (event.getSource() == submit) {// button clicked to add or remove graph elements
-			executeSubmission();
-		}
-		if (event.getSource() == executeFocus) {// button clicked to change focus user
-				String focusUserT = userFocusText.getText().trim();
-				handleChangingFocusUser(focusUserT);
-				userFocusText.setText(""); //Clear out after use
-				totalsLabel.setText(updateTotalsLabel(false));
-		}
-		if(event.getSource() == focusListButton) {
-			if(userFocusBox.getValue() != null) {
-				String focusUserT = (String) userFocusBox.getValue();
-				handleChangingFocusUser(focusUserT);
-				userFocusBox.setValue(""); //Clear out after use
-				totalsLabel.setText(updateTotalsLabel(false));
+		File file = new File(filepath);
+		Scanner scanner = new Scanner(file);
+		int count = 0;
+		ArrayList<String[]> array = new ArrayList<String[]>();
+		while (scanner.hasNextLine()) {
+			count = count + 1;
+			String data = scanner.nextLine();
+			String input[] = data.split(" ");
+			array.add(input);// Add the array to the arraylist so we can loop again after
+			for (int i = 0; i < input.length; i++) {
+				if (input[i].length() > 32) {
+					System.out.println("count:" + count);
+					scanner.close();
+					throw new ImportFormatException();// TODO: add in exception args?
+				}
+			}
+			if (input.length == 1 || input.length > 3) {
+				if (!input[0].contentEquals("")) {
+					System.out.println("count:" + count + " input line length");
+					scanner.close();
+					throw new ImportFormatException();// TODO: add in exception args?
+				}
 			}
 		}
+		for (int j = 0; j < array.size(); j++) {
+			if (array.get(j)[0].equals("a")) {
+				if (array.get(j).length == 2) {// if add vertex
+					graph.addVertex((array.get(j)[1]));
+					logList.add("a " + (array.get(j)[1]));
+				}
+				if (array.get(j).length == 3) {// if add edge
+					graph.addEdge((array.get(j)[1]), (array.get(j)[2]));
+					logList.add("a " + (array.get(j)[1]) + " " + (array.get(j)[2]));
+				}
+			} else if (array.get(j)[0].equals("r")) {
+				if (array.get(j).length == 3) {// if remove edge
+					graph.removeEdge((array.get(j)[1]), (array.get(j)[2]));
+					logList.add("r " + (array.get(j)[1] + " " + (array.get(j)[2])));
+				}
+				if (array.get(j).length == 2) {// if remove vertex
+					graph.removeVertex((array.get(j)[1]));
+					logList.add("r " + (array.get(j)[1]));
+				}
+
+			} else if (array.get(j)[0].equals("s")) {// if change focusUser
+				setFocus(array.get(j)[1]);
+				//logList adds focus user changes inside of setFocus()
+			}
+		}
+		if (focusUser.isBlank()) {
+			Set<String> users = graph.getAllVertices();
+			Iterator<String> listIterator = users.iterator();
+			focusUser = listIterator.next();
+		}
+		scanner.close();
+	}// importGraph
+
+	/**
+	 * Creates a file and writes the current state of the graph to this file. The
+	 * current focusUser is added to the last line of the file ex: s focusUser
+	 * 
+	 * @param filename
+	 */
+	public void exportGraph(String filename) throws FileNotFoundException {
+		if (!filename.contains(".txt")) {
+			filename = filename + ".txt";
+		}
+		Set<String> list = graph.getAllVertices();
+		Iterator<String> listIterator = list.iterator();
+		Set<String> singleOutput;
+		Set<Set<String>> output = new LinkedHashSet<Set<String>>();
+
+		if (list != null) {
+			while (listIterator.hasNext()) {
+				String user = listIterator.next();
+				List<String> adjacent = graph.getAdjacentVerticesOf(user);
+				if (adjacent.isEmpty()) {
+					singleOutput = new LinkedHashSet<String>();
+					singleOutput.add(user);
+					output.add(singleOutput);
+				} else {
+					for (int i = 0; i < adjacent.size(); i++) {
+						singleOutput = new LinkedHashSet<String>();
+						singleOutput.add(user);
+						singleOutput.add(adjacent.get(i));
+						if (!output.contains(singleOutput)) {
+							output.add(singleOutput);
+						}
+					}//for
+				}//else
+			}
+			// We should now have a set without duplicates of all of the users and their
+			// relationships
+		}
+		PrintWriter out = new PrintWriter(filename);
+
+		Iterator<Set<String>> setIterator = output.iterator();
+		while (setIterator.hasNext()) {
+			Set<String> line = new LinkedHashSet<String>();
+			line = setIterator.next();
+			Iterator<String> lineIterator = line.iterator();
+			String outputString = "a";
+			while (lineIterator.hasNext()) {
+				String outputPiece = lineIterator.next();
+				outputString = outputString + " " + outputPiece;
+			}
+			out.println(outputString);
+		}
+		if (!focusUser.equals("")) {
+			out.println("s " + focusUser);
+		}
+		out.close();
 	}
 
 	/**
-	 * Handles behavior of clicking "Submit" and processing the text fields to add
-	 * or remove users/relationships from the graph
+	 * Sets graph equal to a new empty graph
 	 */
-	private void executeSubmission() {
-		String text1 = user1Text.getText().trim();
-		String text2 = user2Text.getText().trim();
+	public void clearGraph() {
+		this.clearNetwork();
+		this.setFocus("");
+		graph = new UndirectedGraph();
+	}
 
-		if (addRadio.isSelected()) {// add mode
-			if (!text1.isBlank() && text2.isBlank()) {// only user1Text is populated
-				if (!network.validString(text1)) {
-					updateText.setText(invalidCharHelpText());
-				} else {
-					if (network.addUser(text1) == true) {
-						updateText.setText("Success! Friend added.");
-					} else {
-						updateText.setText("Sorry! Friend could not be added.");
-					}
-					drawGraph();
-				}
-			} else if (text1.isBlank() && !text2.isBlank()) {// only user2Text is populated
-				if (!network.validString(text2)) {
-					updateText.setText(invalidCharHelpText());
-				} else {
-					if (network.addUser(text2) == true) {
-						updateText.setText("Success! Friend added.");
-					} else {
-						updateText.setText("Sorry! Friend could not be added.");
-					}
-					drawGraph();
-				}
-			} else if (!text1.isBlank() && !text2.isBlank()) {// both fields have text
-				if (!network.validString(text1) || !network.validString(text2)) {
-					updateText.setText(invalidCharHelpText());
-				} else {
-					if (network.addFriendship(text1, text2) == true) {
-						updateText.setText("Success! Friendship added.");
-					} else {
-						updateText.setText("Sorry! Friendship could not be added.");
-					}
-					drawGraph();
-				}
-			} else {
-
-			}
-		} else {// remove mode
-			if (!text1.isBlank() && text2.isBlank()) {// only user1Text is populated
-				if (!network.validString(text1)) {
-					updateText.setText(invalidCharHelpText());
-				} else {
-					if (network.removeUser(text1) == true) {
-						updateText.setText("Success! Friend removed.");
-					} else {
-						updateText.setText("Sorry! Friend could not be removed.");
-					}
-					drawGraph();
-				}
-
-			} else if (text1.isBlank() && !text2.isBlank()) {// only user2Text is populated
-				if (!network.validString(text2)) {
-					updateText.setText(invalidCharHelpText());
-				} else {
-					if (network.removeUser(text2) == true) {
-						updateText.setText("Success! Friend removed.");
-					} else {
-						updateText.setText("Sorry! Friend could not be removed.");
-					}
-					drawGraph();
-				}
-			} else if (!text1.isBlank() && !text2.isBlank()) {// both fields have text
-				if (!network.validString(text1) || !network.validString(text2)) {
-					updateText.setText(invalidCharHelpText());
-				} else {
-					if (network.removeFriendship(text1, text2) == true) {
-						updateText.setText("Success! Friendship removed.");
-					} else {
-						updateText.setText("  Sorry, friendship couldn't be removed."
-								+ "\n Check that you entered the right names.");
-					}
-					drawGraph();
-				}
-			} 
+	/**
+	 * Changes the focus member of the graph. Resets the network graph.
+	 * 
+	 * The user must be in the network to become the new focus user.
+	 * 
+	 * @return - true if user is in network, false if not
+	 */
+	public boolean changeFocus(String name) {
+		if (graph.getAllVertices().contains(name) == false) {
+			return false;
 		}
-		
-		userChoices.setAll(network.getAllUsers());
-		totalsLabel.setText(updateTotalsLabel(false));
-		// Blank out text fields
-		user1Text.setText("");
-		user2Text.setText("");
-	}// executeSubmission
+		this.setFocus(name); //logList modified in setFocus
+		this.clearNetwork();
+		this.createNewPeople();
+		this.updateFriendships();
+		return true;
+	}
 
-	private void drawGraph() {
-		// Initialize a fresh canvas, leave the old one for garbage collection
-		// canvas = new Canvas(width1, GRAPH_HEIGHT);
-		// Redefine the GraphicsContext and clear the old canvas
-		GraphicsContext gc = canvas.getGraphicsContext2D();
-		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+	/**
+	 * Sets new start or 'root' member for the graph.  Intended for internal
+	 * modification of focusUser.
+	 * 
+	 * @param name
+	 */
+	private void setFocus(String name) {
+		logList.add("s "+name);
+		focusUser = name;
+	}
 
-		double midX = canvas.getWidth() / 2;
-		double midY = canvas.getHeight() / 2;
+	/**
+	 * gets the focusUser
+	 */
+	public String getFocus() {
+		return focusUser;
+	}
 
-		// Get list of relationship sets from Network Manager given a root node
-		relationships = network.getFriendships();
-		HashMap<String, Person> users = network.getConnectedUsers();
+	////////////////////////////////////////////////////////
+	// Wrapper methods for interacting with UndirectedGraph//
+	////////////////////////////////////////////////////////
 
-		// HashSet<Person> visited = new HashSet<Person>(); //Keeps track of which lines
-		// have been drawn.
+	/**
+	 * Attempts to add a name to the underlying graph. If the name parameter is not
+	 * a valid string
+	 * 
+	 * 
+	 */
+	public boolean addUser(String name) {
+		int initialUsers = graph.order();
+		graph.addVertex(name);
+		System.out.println("Adding: " + name);
+		int currentUsers = graph.order();
 
-		/*
-		 * //DEBUG: Remove later for (int i = 0; i < relationships.size(); i++) {
-		 * System.out.print("Relationship " + i + " contains:"); for (Person p :
-		 * relationships.get(i)) { System.out.print(p.getName()); }
-		 * System.out.println(); }
-		 */
-
-		// for each relationship
-		for (int i = 0; i < relationships.size(); i++) {
-			String[] persons = new String[2];
-			double[] coords = new double[4];
-			boolean secondLoop = false;
-			for (Person p : relationships.get(i)) {// there should only ever be 2 Person items in a set
-				if (secondLoop == false) {
-					persons[0] = p.getName();
-					coords[0] = p.getPosX();
-					coords[1] = p.getPosY();
-				} else {
-					persons[1] = p.getName();
-					coords[2] = p.getPosX();
-					coords[3] = p.getPosY();
-				}
-				secondLoop = true;
-			} // draw the line between the points
-			gc.setStroke(Color.BLACK);
-			gc.setLineWidth(1.5);
-			// System.out.println("Printing " + persons[0] + " to " + persons[1]);
-			gc.strokeLine(midX + coords[0], midY + coords[1], midX + coords[2], midY + coords[3]);
-		} // relationship
-
-		// Draw a circle for each person
-		double yNameOffset = 3.75;// arbitrary value that seems to drop the text far enough
-
-		Set<String> connectedUserNames = users.keySet();
-		for (String name : connectedUserNames) {
-			Person p = users.get(name);
-			if (p.getName().equals(network.getFocus())) {// if the person is the focusUser draw them in softGold
-				gc.setFill(softGold);
-			} else {// otherwise draw the circle as mildTeal
-				gc.setFill(mildTeal);
-			}
-			// fillOval(x coord, y coord, oval width, oval height), circles are drawn from
-			// upper left corner so subtract radius to center
-			gc.fillOval(midX + (p.getPosX() - RADIUS), midY + (p.getPosY() - RADIUS), 2 * RADIUS, 2 * RADIUS);
-			gc.setFill(Color.BLACK);// set text color to black
-			gc.setFont(new Font(12.5));
-			double xNameOffset = 3.5 * (p.getName().length());// place text on -x axis as a function of its length
-			gc.fillText(p.getName(), midX + p.getPosX() - xNameOffset, midY + p.getPosY() + yNameOffset);
+		// if this is the first user successfully added to an empty graph, make it the
+		// focus
+		if (initialUsers == 0 && currentUsers == 1) {
+			this.setFocus(name);
 		}
-		// System.out.println("Debug: bottom of draw");
-		// Provide graphControl with reference to new canvas.
-		// graphControl.setContent(canvas);
-	}// drawGraph
+		// update the Network graph
+		createNewPeople();
+		updateFriendships();
 
-	private void handleChangingFocusUser(String focusUserT) {
-
-		if (!network.validString(focusUserT) || !network.getAllUsers().contains(focusUserT)) {// if Change Focus input
-																								// is invalid or not in
-																								// the graph...
-			// TODO: Alert the user regarding the input.
-			updateText.setText("Focus user invalid.");
+		if (currentUsers > initialUsers) {
+			logList.add("a "+name);
+			return true;
 		} else {
-			network.changeFocus(focusUserT);
-			drawGraph();
-			updateText.setText("Focus user set to " + focusUserT + ".");
+			return false;
 		}
 	}
 
-	private String invalidCharHelpText() {
-		return "Sorry, that is not a valid user's name." + "\n   Please enter a name less than 32 \n characters and "
-				+ "no special characters.";
-	}
-	
-	private String updateTotalsLabel(Boolean clear) {
-		if (!clear) {
-			totalUsers = network.getNumUsers();
-			totalFriendships = network.getNumFriendships();
-			totalConnectedUsers = network.currentlyConnectedPeople.size();
+	public boolean addFriendship(String name1, String name2) {
+		int initialUsers = graph.order();
+		int initialEdges = graph.size();
+		graph.addEdge(name1, name2);
+		int currentUsers = graph.order();
+		int currentEdges = graph.size();
+
+		if (initialUsers == 0 && currentUsers > 0) {
+			this.setFocus(name1);
 		}
-		else {
-			totalUsers = 0;
-			totalFriendships = 0;
-			totalConnectedUsers = 0;
+		System.out.println("Adding: " + name1 + " and " + name2);
+		// update the Network graph
+		createNewPeople();
+		updateFriendships();
+
+		if (currentEdges > initialEdges) {
+			logList.add("a "+name1+" "+name2);
+			return true;
+		} else {
+			return false;
 		}
-		return (totalUsers+" Users\n"+totalFriendships+" Friendships\n"+totalConnectedUsers+" Connected Users");
 	}
 
-}// GUI
+	/**
+	 * Removes the user from the underlying graph and modifies the network graph.
+	 * 
+	 * If the last user is removed, sets focusUser to ""
+	 * 
+	 * If the focus user is removed
+	 * 
+	 * @param name
+	 * @return
+	 */
+	public boolean removeUser(String name) {
+		int initialUsers = graph.order();
+		ArrayList<String> connected = BFTraversal(this.getFocus());
+		graph.removeVertex(name); // attempt to remove the node
+		int currentUsers = graph.order();
+		if (currentUsers < initialUsers) {// if removal is successful
+			if (name.equals(this.focusUser)) {
+				if (currentUsers == 0) {// if this is the last user in the true graph
+					this.setFocus("");
+					clearNetwork();
+				} else {// change focus to another user
+					if (currentlyConnectedPeople.size() > 1) {// if there are other users in the network graph
+						connected.remove(focusUser);
+						currentlyConnectedPeople.remove(focusUser);
+
+						setFocus(connected.get(0));
+						clearNetwork();
+						createNewPeople();
+						updateFriendships();
+					} else {// if focusUser is last in the sub-graph
+						clearNetwork();
+
+						Set<String> otherUsers = graph.getAllVertices();
+						String[] otherUsersArray = otherUsers.toArray(new String[graph.order()]);
+						int next = rnd.nextInt(otherUsersArray.length);
+						setFocus(otherUsersArray[next]);
+						createNewPeople();
+						updateFriendships();
+					}
+				}
+			} else {// if removal is not the focus user...
+				System.out.println("DEBUG: removing a non-focus user");
+				clearNetwork();
+				createNewPeople();
+				updateFriendships();
+			}
+			logList.add("r "+name);
+			return true;
+		} // if graph.removeVertex fails
+		return false;
+	}
+
+	public boolean removeFriendship(String name1, String name2) {
+		int initialEdges = graph.size();
+		graph.removeEdge(name1, name2);
+		ArrayList<String> connected = BFTraversal(this.getFocus());
+		int currentEdges = graph.size();
+		if (currentEdges < initialEdges) {
+			if (!connected.contains(name1)) {
+				currentlyConnectedPeople.remove(name1);
+			}
+			if (!connected.contains(name2)) {
+				currentlyConnectedPeople.remove(name2);
+			}
+			currentlyConnectedFriends.clear();
+			updateFriendships();
+			logList.add("r "+name1+" "+name2);
+			return true;
+		}
+		return false;
+	}
+
+	public int getNumUsers() {
+		return graph.order();
+	}
+
+	public int getNumFriendships() {
+		return graph.size();
+	}
+
+	public Set<String> getAllUsers() {
+		return graph.getAllVertices();
+	}
+	////////////////////////////////////////////////////////
+	//////////////// End of Wrapper methods//////////////////
+	////////////////////////////////////////////////////////
+
+	/**
+	 * Confirms whether the string passed into add/remove methods is <= 32
+	 * characters and has only 1 word
+	 */
+	public boolean validString(String input) {
+		if (input.length() > 32) {
+			return false;
+		}
+		String sentence = input;
+		String[] words = sentence.split(" ");
+		if (words.length > 1) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Performs a breadth-first traversal of the graph from focusUser
+	 * 
+	 * @param focusUser - precondition: focusUser is in the graph
+	 * @return - returns a list of all nodes that can be reached from focusUser
+	 */
+	private ArrayList<String> BFTraversal(String focusUser) {
+		LinkedList<String> queue = new LinkedList<String>(); // LinkedList implements deque
+		ArrayList<String> visited = new ArrayList<String>();
+		if (focusUser.isEmpty()) {
+			return visited;
+		}
+		visited.add(focusUser);
+		queue.addFirst(focusUser); // enqueue
+		while (!queue.isEmpty()) {
+			String current = queue.removeLast();
+			System.out.println("BFTraversal current: " + current);
+			for (String v : graph.getAdjacentVerticesOf(current)) {
+				System.out.println("BFTraversal v: " + v);
+				if (!visited.contains(v)) {
+					visited.add(v);
+					queue.addFirst(v);
+				} // end if v not visited
+			} // end for every successor of v
+		} // end while queue not empty
+		return visited;
+	}// BFTraversal
+
+	/**
+	 * Checks if there are any names in the graph connected to focusUser that have
+	 * not been added to currentlyConnectedPeople.
+	 * 
+	 * Creates a new Person and generates (X,Y) coords before adding to HashMap
+	 * 
+	 * @return
+	 */
+	private void createNewPeople() {
+		ArrayList<String> traversalResults = BFTraversal(focusUser);
+		for (String name : traversalResults) {
+			if (!currentlyConnectedPeople.keySet().contains(name)) {
+				if (name.equals(focusUser)) {
+					currentlyConnectedPeople.put(name, new Person(name, 0, 0));
+				} else {
+					double[] coords = getNextCoords();
+					double nextX = coords[0];
+					double nextY = coords[1];
+					currentlyConnectedPeople.put(name, new Person(name, nextX, nextY));
+				}
+			}
+		}
+	}// createNewPeople
+
+	/**
+	 * Generates X and Y coordinates
+	 * 
+	 * Currently just randomly generates X-Y coords within the canvas
+	 * 
+	 * @return
+	 */
+	private double[] getNextCoords() {
+		double[] coords = new double[2];
+		coords[0] = (double) rnd.nextInt(720) - 360; // x
+		coords[1] = (double) rnd.nextInt(360) - 180; // y
+		return coords;
+	}
+
+	/**
+	 * Checks all users in currentlyConnectedPeople and creates a list of their
+	 * relationship sets by referencing the underlying graph.
+	 */
+	private void updateFriendships() {
+		for (String p : currentlyConnectedPeople.keySet()) {
+			List<String> friends = graph.getAdjacentVerticesOf(p);
+			for (String f : friends) {
+				HashSet<Person> friendship = new HashSet<Person>();
+				friendship.add(currentlyConnectedPeople.get(f));
+				friendship.add(currentlyConnectedPeople.get(p));
+				if (!currentlyConnectedFriends.contains(friendship)) {
+					currentlyConnectedFriends.add(friendship);
+				}
+			}
+		}
+	}
+
+	public ArrayList<HashSet<Person>> getFriendships() {
+		return currentlyConnectedFriends;
+	}
+
+	public HashMap<String, Person> getConnectedUsers() {
+		return currentlyConnectedPeople;
+	}
+
+	/**
+	 * Resets the graph at the network level while leaving the underlying
+	 * UndirectedGraph unaltered.
+	 */
+	public void clearNetwork() {
+		currentlyConnectedPeople.clear();
+		currentlyConnectedFriends.clear();
+	}
+
+	// Debug method, remove later
+	public void testStaticGraph() {
+		// Print all users in the underlying graph
+
+
+
+
+		this.clearNetwork();
+		createNewPeople();
+		updateFriendships();
+		
+		for(String s : logList) {
+			System.out.println(s);
+		}
+
+		System.out.println("End of testStaticGraph.");
+	}
+
+}
