@@ -19,6 +19,7 @@ public class NetworkManager {
 	private UndirectedGraph graph; // The underlying graph
 	String focusUser; // The user who the network is focused on
 	Random rnd = new Random();
+	ArrayList<String> logList; //exports to a text log recording all changes to the graph
 
 	// Set of people currently in a network with focusUser
 	HashMap<String, Person> currentlyConnectedPeople;
@@ -36,6 +37,7 @@ public class NetworkManager {
 		focusUser = "";
 		currentlyConnectedPeople = new HashMap<String, Person>();
 		currentlyConnectedFriends = new ArrayList<HashSet<Person>>();
+		logList = new ArrayList<String>();
 	}
 
 	/**
@@ -54,75 +56,77 @@ public class NetworkManager {
 	 * @throws ImportFormatException - is formatted incorrectly
 	 */
 	public void importGraph(String filepath) throws FileNotFoundException, IOException, ImportFormatException {
-		
-			File file = new File(filepath);
-			Scanner scanner = new Scanner(file);
-			int count = 0;
-			ArrayList<String[]> array = new ArrayList<String[]>();
-			while (scanner.hasNextLine()) {
-				count = count + 1;
-				String data = scanner.nextLine();
-				String input[] = data.split(" ");
-				array.add(input);// Add the array to the arraylist so we can loop again after
-				for (int i=0; i<input.length; i++) {
-					if (input[i].length()>32) {
-						System.out.println("count:"+count);
-						throw new ImportFormatException("File is too long at line "+count);
-					}
-				}
-				if (input.length == 1 || input.length > 3) {
-					if(!input[0].contentEquals("")) {
-						System.out.println("count:"+count+" input line length");
-						throw new ImportFormatException("File is invalid at line "+count);
-					}
-				}
-			}
-			for (int j = 0; j < array.size(); j++) {
-				if (array.get(j)[0].equals("a")) {
-					for (int i = 1; i < array.get(j).length; i++) {
-						graph.addVertex((array.get(j)[i]));
-					}
-					if (array.get(j).length > 2) {
-						graph.addEdge((array.get(j)[1]), (array.get(j)[2]));
-					}
-				} else if (array.get(j)[0].equals("r")) {
-					if (array.get(j).length == 3) {
-						graph.removeEdge((array.get(j)[1]), (array.get(j)[2]));
-					} else {
-						for (int i = 1; i < array.get(j).length; i++) {
-							graph.removeVertex((array.get(j)[i]));
-						}
-					}
-				} else if (array.get(j)[0].equals("s")) {
-					setFocus(array.get(j)[1]);
-				}
-			}
-			if (focusUser=="") {
-				Set<String> users = graph.getAllVertices();
-				Iterator<String> listIterator = users.iterator();
-				focusUser=listIterator.next();
-			}
-			System.out.println("");
-			scanner.close();
 
-		System.out.println("");
-	}
+		File file = new File(filepath);
+		Scanner scanner = new Scanner(file);
+		int count = 0;
+		ArrayList<String[]> array = new ArrayList<String[]>();
+		while (scanner.hasNextLine()) {
+			count = count + 1;
+			String data = scanner.nextLine();
+			String input[] = data.split(" ");
+			array.add(input);// Add the array to the arraylist so we can loop again after
+			for (int i = 0; i < input.length; i++) {
+				if (input[i].length() > 32) {
+					System.out.println("count:" + count);
+					scanner.close();
+					throw new ImportFormatException();// TODO: add in exception args?
+				}
+			}
+			if (input.length == 1 || input.length > 3) {
+				if (!input[0].contentEquals("")) {
+					System.out.println("count:" + count + " input line length");
+					scanner.close();
+					throw new ImportFormatException();// TODO: add in exception args?
+				}
+			}
+		}
+		for (int j = 0; j < array.size(); j++) {
+			if (array.get(j)[0].equals("a")) {
+				if (array.get(j).length == 2) {// if add vertex
+					graph.addVertex((array.get(j)[1]));
+					logList.add("a " + (array.get(j)[1]));
+				}
+				if (array.get(j).length == 3) {// if add edge
+					graph.addEdge((array.get(j)[1]), (array.get(j)[2]));
+					logList.add("a " + (array.get(j)[1]) + " " + (array.get(j)[2]));
+				}
+			} else if (array.get(j)[0].equals("r")) {
+				if (array.get(j).length == 3) {// if remove edge
+					graph.removeEdge((array.get(j)[1]), (array.get(j)[2]));
+					logList.add("r " + (array.get(j)[1] + " " + (array.get(j)[2])));
+				}
+				if (array.get(j).length == 2) {// if remove vertex
+					graph.removeVertex((array.get(j)[1]));
+					logList.add("r " + (array.get(j)[1]));
+				}
+
+			} else if (array.get(j)[0].equals("s")) {// if change focusUser
+				setFocus(array.get(j)[1]);
+				//logList adds focus user changes inside of setFocus()
+			}
+		}
+		if (focusUser.isBlank()) {
+			Set<String> users = graph.getAllVertices();
+			Iterator<String> listIterator = users.iterator();
+			focusUser = listIterator.next();
+		}
+		scanner.close();
+	}// importGraph
 
 	/**
 	 * Creates a file and writes the current state of the graph to this file. The
 	 * current focusUser is added to the last line of the file ex: s focusUser
 	 * 
 	 * @param filename
-	 * @throws FileNotFoundException 
 	 */
 	public void exportGraph(String filename) throws FileNotFoundException {
 		if (!filename.contains(".txt")) {
-			filename=filename+".txt";
+			filename = filename + ".txt";
 		}
-		
 		Set<String> list = graph.getAllVertices();
 		Iterator<String> listIterator = list.iterator();
-		Set<String> singleOutput = new LinkedHashSet<String>();
+		Set<String> singleOutput;
 		Set<Set<String>> output = new LinkedHashSet<Set<String>>();
 
 		if (list != null) {
@@ -130,39 +134,41 @@ public class NetworkManager {
 				String user = listIterator.next();
 				List<String> adjacent = graph.getAdjacentVerticesOf(user);
 				if (adjacent.isEmpty()) {
-					singleOutput.add(user);
-					output.add(singleOutput);
-				}
-				for (int i = 0; i < adjacent.size(); i++) {
 					singleOutput = new LinkedHashSet<String>();
 					singleOutput.add(user);
-					singleOutput.add(adjacent.get(i));
-					if (!output.contains(singleOutput)) {
-						output.add(singleOutput);
-					}
-				}
+					output.add(singleOutput);
+				} else {
+					for (int i = 0; i < adjacent.size(); i++) {
+						singleOutput = new LinkedHashSet<String>();
+						singleOutput.add(user);
+						singleOutput.add(adjacent.get(i));
+						if (!output.contains(singleOutput)) {
+							output.add(singleOutput);
+						}
+					}//for
+				}//else
 			}
 			// We should now have a set without duplicates of all of the users and their
 			// relationships
 		}
-		
-			PrintWriter out = new PrintWriter(filename);
+		PrintWriter out = new PrintWriter(filename);
 
-			Iterator<Set<String>> setIterator = output.iterator();
-			while (setIterator.hasNext()) {
-				Set<String> line = new LinkedHashSet<String>();
-				line = setIterator.next();
-				Iterator<String> lineIterator = line.iterator();
-				String outputString = "a";
-				while (lineIterator.hasNext()) {
-					String outputPiece = lineIterator.next();
-					outputString = outputString + " " + outputPiece;
-				}
-				out.println(outputString);
+		Iterator<Set<String>> setIterator = output.iterator();
+		while (setIterator.hasNext()) {
+			Set<String> line = new LinkedHashSet<String>();
+			line = setIterator.next();
+			Iterator<String> lineIterator = line.iterator();
+			String outputString = "a";
+			while (lineIterator.hasNext()) {
+				String outputPiece = lineIterator.next();
+				outputString = outputString + " " + outputPiece;
 			}
+			out.println(outputString);
+		}
+		if (!focusUser.equals("")) {
 			out.println("s " + focusUser);
-			out.close();
-
+		}
+		out.close();
 	}
 
 	/**
@@ -185,7 +191,7 @@ public class NetworkManager {
 		if (graph.getAllVertices().contains(name) == false) {
 			return false;
 		}
-		this.setFocus(name);
+		this.setFocus(name); //logList modified in setFocus
 		this.clearNetwork();
 		this.createNewPeople();
 		this.updateFriendships();
@@ -193,11 +199,13 @@ public class NetworkManager {
 	}
 
 	/**
-	 * Sets new start or 'root' member for the graph.
+	 * Sets new start or 'root' member for the graph.  Intended for internal
+	 * modification of focusUser.
 	 * 
 	 * @param name
 	 */
-	public void setFocus(String name) {
+	private void setFocus(String name) {
+		logList.add("s "+name);
 		focusUser = name;
 	}
 
@@ -234,6 +242,7 @@ public class NetworkManager {
 		updateFriendships();
 
 		if (currentUsers > initialUsers) {
+			logList.add("a "+name);
 			return true;
 		} else {
 			return false;
@@ -256,6 +265,7 @@ public class NetworkManager {
 		updateFriendships();
 
 		if (currentEdges > initialEdges) {
+			logList.add("a "+name1+" "+name2);
 			return true;
 		} else {
 			return false;
@@ -298,7 +308,6 @@ public class NetworkManager {
 						String[] otherUsersArray = otherUsers.toArray(new String[graph.order()]);
 						int next = rnd.nextInt(otherUsersArray.length);
 						setFocus(otherUsersArray[next]);
-
 						createNewPeople();
 						updateFriendships();
 					}
@@ -309,6 +318,7 @@ public class NetworkManager {
 				createNewPeople();
 				updateFriendships();
 			}
+			logList.add("r "+name);
 			return true;
 		} // if graph.removeVertex fails
 		return false;
@@ -328,6 +338,7 @@ public class NetworkManager {
 			}
 			currentlyConnectedFriends.clear();
 			updateFriendships();
+			logList.add("r "+name1+" "+name2);
 			return true;
 		}
 		return false;
@@ -373,7 +384,9 @@ public class NetworkManager {
 	private ArrayList<String> BFTraversal(String focusUser) {
 		LinkedList<String> queue = new LinkedList<String>(); // LinkedList implements deque
 		ArrayList<String> visited = new ArrayList<String>();
-
+		if (focusUser.isEmpty()) {
+			return visited;
+		}
 		visited.add(focusUser);
 		queue.addFirst(focusUser); // enqueue
 		while (!queue.isEmpty()) {
@@ -466,38 +479,18 @@ public class NetworkManager {
 	// Debug method, remove later
 	public void testStaticGraph() {
 		// Print all users in the underlying graph
-		System.out.print("Users in underlying graph: ");
-		for (String p : graph.getAllVertices()) {
-			System.out.print(p + " ");
-		}
-		System.out.println();
-		System.out.println("Focus user is " + this.getFocus());
 
-		try {
-		System.out.println("testing input1");
-		this.importGraph("friends_001.txt");
-		this.exportGraph("testoutput1.txt");
-		System.out.println("testing input2");
-		this.importGraph("friends_002.txt");
-		this.exportGraph("testoutput2.txt");
-		System.out.println("testing input3");
-		this.importGraph("friends_003.txt");
-		this.exportGraph("testoutput3.txt");
-		System.out.println("testing bad input1");
-		this.importGraph("badinput1.txt");
-		System.out.println("testing bad input2");
-		this.importGraph("badinput2.txt");
-		
-		}catch(ImportFormatException e) {
-			System.out.println("ImportFormatException thrown. ");
-		}
-		catch(Exception e) {
-			System.out.println(e.getMessage());
-		}
+
+
+
 		this.clearNetwork();
 		createNewPeople();
 		updateFriendships();
 		
+		for(String s : logList) {
+			System.out.println(s);
+		}
+
 		System.out.println("End of testStaticGraph.");
 	}
 
