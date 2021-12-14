@@ -113,8 +113,9 @@ public class NetworkManager {
 	 * current focusUser is added to the last line of the file ex: s focusUser
 	 * 
 	 * @param filename
+	 * @throws FileNotFoundException 
 	 */
-	public void exportGraph(String filename) {
+	public void exportGraph(String filename) throws FileNotFoundException {
 		if (!filename.contains(".txt")) {
 			filename=filename+".txt";
 		}
@@ -144,7 +145,7 @@ public class NetworkManager {
 			// We should now have a set without duplicates of all of the users and their
 			// relationships
 		}
-		try {
+		
 			PrintWriter out = new PrintWriter(filename);
 
 			Iterator<Set<String>> setIterator = output.iterator();
@@ -161,10 +162,6 @@ public class NetworkManager {
 			}
 			out.println("s " + focusUser);
 			out.close();
-		} catch (FileNotFoundException e) {
-			// TODO - need to throw a popup to tell user that it's not a valid filepath
-			e.printStackTrace();
-		}
 
 	}
 

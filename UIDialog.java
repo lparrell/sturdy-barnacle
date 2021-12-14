@@ -1,5 +1,6 @@
 package application;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import javafx.event.ActionEvent;
@@ -107,15 +108,19 @@ public class UIDialog {
 						try {
 							network.importGraph(dialog.getResult());
 						} catch (IOException e) {
-							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Invalid File Input","The specified file, " + filepath + " was not found.");
+							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Invalid File Input","The specified file, " + filepath + ", was not found.");
 						} catch (ImportFormatException e) {
-							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Invalid File Format","The specified file, " + filepath + " had an invalid file format.");
+							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Invalid File Format","The specified file, " + filepath + ", had an invalid file format.");
 						}
 						//
 					}
 					// TODO: Test the below for export:
 					if (!isImport) { // if it's not import, it's export
-						network.exportGraph(dialog.getResult());
+						try {
+							network.exportGraph(dialog.getResult());
+						} catch (FileNotFoundException e) {
+							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"File not found","The specified file, " + filepath + ", was not found.");
+						}
 						showExportCloseDialog(dialog.getOwner());
 					}
 
