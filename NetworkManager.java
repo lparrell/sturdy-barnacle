@@ -64,9 +64,17 @@ public class NetworkManager {
 				String data = scanner.nextLine();
 				String input[] = data.split(" ");
 				array.add(input);// Add the array to the arraylist so we can loop again after
-				if (input.length < 2 || input.length > 3) {
-					// String output = "File is invalid at line "+count;
-					throw new ImportFormatException();
+				for (int i=0; i<input.length; i++) {
+					if (input[i].length()>32) {
+						System.out.println("count:"+count);
+						throw new ImportFormatException("File is too long at line "+count);
+					}
+				}
+				if (input.length == 1 || input.length > 3) {
+					if(!input[0].contentEquals("")) {
+						System.out.println("count:"+count+" input line length");
+						throw new ImportFormatException("File is invalid at line "+count);
+					}
 				}
 			}
 			for (int j = 0; j < array.size(); j++) {
@@ -89,6 +97,11 @@ public class NetworkManager {
 					setFocus(array.get(j)[1]);
 				}
 			}
+			if (focusUser=="") {
+				Set<String> users = graph.getAllVertices();
+				Iterator<String> listIterator = users.iterator();
+				focusUser=listIterator.next();
+			}
 			System.out.println("");
 			scanner.close();
 		} catch (FileNotFoundException e) {
@@ -107,6 +120,10 @@ public class NetworkManager {
 	 * @param filename
 	 */
 	public void exportGraph(String filename) {
+		if (!filename.contains(".txt")) {
+			filename=filename+".txt";
+		}
+		
 		Set<String> list = graph.getAllVertices();
 		Iterator<String> listIterator = list.iterator();
 		Set<String> singleOutput = new LinkedHashSet<String>();
@@ -466,16 +483,21 @@ public class NetworkManager {
 
 		try {
 		System.out.println("testing input1");
-		this.importGraph("input1.txt");
-		System.out.println("testing input2");
-		this.importGraph("input2.txt");
-		System.out.println("testing input3");
-		this.importGraph("input3.txt");
-		//this.importGraph("badinput1.txt");
-		//this.importGraph("badinput2.txt");
+		this.importGraph("friends_001.txt");
 		this.exportGraph("testoutput1.txt");
+		System.out.println("testing input2");
+		this.importGraph("friends_002.txt");
+		this.exportGraph("testoutput2.txt");
+		System.out.println("testing input3");
+		this.importGraph("friends_003.txt");
+		this.exportGraph("testoutput3.txt");
+		System.out.println("testing bad input1");
+		this.importGraph("badinput1.txt");
+		System.out.println("testing bad input2");
+		this.importGraph("badinput2.txt");
+		
 		}catch(ImportFormatException e) {
-			System.out.println("ImportFormatException thrown.");
+			System.out.println("ImportFormatException thrown. ");
 		}
 		catch(Exception e) {
 			System.out.println(e.getMessage());
