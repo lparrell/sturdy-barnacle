@@ -28,7 +28,9 @@ public class UndirectedGraph implements UndirectedGraphADT {
 		public void remove() {
 
 			for (Vertex v : vertices) {
-				v.linkedVertices.remove(this);
+				if(v.linkedVertices.remove(this)) {
+					numEdges--;
+				}
 			}
 			
 			this.linkedVertices = null; //remove successor pointers
