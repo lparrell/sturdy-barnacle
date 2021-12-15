@@ -103,7 +103,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 	Button importButton;
 	Button exportButton;
 	Button clearButton;
-	Button undoButton;
+	Button redrawButton;
 	Button helpButton;
 	Button submit;
 	Button executeFocus;
@@ -212,7 +212,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 		// Declare controls for the bottomBox
 		importButton = new Button("Import Network");
-		exportButton = new Button("Export Network");
+		exportButton = new Button("Save Network");
 		clearButton = new Button("Clear Network");
 
 		totalFriendships = 0;
@@ -231,11 +231,11 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		bottomBox.getChildren().addAll(totalsLabel, importButton, exportButton, clearButton);
 
 		// Declare controls for the utilities box
-		undoButton = new Button("Undo");
+		redrawButton = new Button("Redraw");
 		helpButton = new Button("Help");
 		utilities.setSpacing(35);
 		utilities.setAlignment(Pos.CENTER);
-		utilities.getChildren().addAll(undoButton, helpButton);
+		utilities.getChildren().addAll(redrawButton, helpButton);
 
 		/////////////////////////////////////////////
 		// Create the root layout pane as a GridPane//
@@ -316,7 +316,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		exportButton.setOnAction(this);
 		clearButton.setOnAction(this);
 		helpButton.setOnAction(this);
-		undoButton.setOnAction(this);
+		redrawButton.setOnAction(this);
 		submit.setOnAction(this);
 		executeFocus.setOnAction(this);
 		focusListButton.setOnAction(this);
@@ -360,16 +360,16 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		primaryStage.setTitle(APP_TITLE);
 		primaryStage.setScene(mainScene);
 		primaryStage.show();
-		
+
 		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 
 			@Override
 			public void handle(WindowEvent event) {
 				uiDialog.showExportCloseDialog(grid.getScene().getWindow(), network, event);
 			}
-			
+
 		});
-				
+
 	}
 
 	/**
@@ -405,12 +405,9 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 			uiDialog.showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(), "How to...",
 					uiDialog.returnHelpText(), false);
 		}
-		// DEBUG: right now Undo is sort of a garbage pail for debugging, remove all
-		// this when implementing Undo
-		if (event.getSource() == undoButton) {// button clicked to undo most recent change
-			// TODO: Undo the action
-			updateText.setText("Undo pressed.");
-			network.testStaticGraph();
+		
+		if (event.getSource() == redrawButton) {// button will redraw the current graph
+			network.changeFocus(network.getFocus());
 			drawGraph();
 			userChoices.setAll(network.getAllUsers());
 		}
@@ -618,7 +615,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		if (!clear) {
 			totalUsers = network.getNumUsers();
 			totalFriendships = network.getNumFriendships();
-			System.out.println("DEBUG: friendships"+totalFriendships);
+			System.out.println("DEBUG: friendships" + totalFriendships);
 			totalConnectedUsers = network.currentlyConnectedPeople.size();
 		} else {
 			totalUsers = 0;
@@ -628,6 +625,13 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		return (totalUsers + " Users\n" + totalFriendships + " Friendships\n" + totalConnectedUsers
 				+ " Connected Users");
 	}
-	
 
+	/**
+	 * This method is called any time the program exits
+	 */
+	@Override
+	public void stop() {
+		network.writeToLog();
+	}
+	
 }// GUI
