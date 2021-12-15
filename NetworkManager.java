@@ -112,6 +112,9 @@ public class NetworkManager {
 			focusUser = listIterator.next();
 		}
 		scanner.close();
+		clearNetwork();
+		createNewPeople();
+		updateFriendships();
 	}// importGraph
 
 	/**
@@ -476,22 +479,22 @@ public class NetworkManager {
 		currentlyConnectedFriends.clear();
 	}
 
-	// Debug method, remove later
-	public void testStaticGraph() {
-		// Print all users in the underlying graph
-
-
-
-
-		this.clearNetwork();
-		createNewPeople();
-		updateFriendships();
-		
-		for(String s : logList) {
-			System.out.println(s);
+	/**
+	 * Writes the current contents of logList to a file
+	 * named log.txt.  
+	 */
+	public void writeToLog() {
+		PrintWriter out = null;
+		try {
+			out = new PrintWriter("log.txt");
+		}catch(FileNotFoundException e) {
+			System.out.println("ERROR: log.txt failed to write!");
 		}
-
-		System.out.println("End of testStaticGraph.");
+		//Print each line of logList to the file.
+		for(String line : logList) {
+			out.println(line);
+		}
+		out.close();
 	}
-
+	
 }
