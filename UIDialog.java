@@ -3,6 +3,7 @@ package application;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
@@ -12,46 +13,69 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
+import javafx.util.Callback;
 
 public class UIDialog {
+	
+	//static Boolean canClose = false;
 	
 	public UIDialog() {
 		// Default no argument constructor
 	}
 
-    public void showAlerts(Alert.AlertType type, Window owner, String header, String headerMsg) {
+    public void showAlerts(Alert.AlertType type, Window owner, String header, String headerMsg, Boolean shouldClose) {
         Alert alert = new Alert(type);
         alert.setTitle(header);
         alert.setHeaderText(null);
         alert.setContentText(headerMsg);
         alert.initOwner(owner);
         alert.show();
+        
+        if (shouldClose) {
+	        Button okButton = (Button) alert.getDialogPane().lookupButton(ButtonType.OK);
+	        
+	        okButton.setOnAction(new EventHandler<ActionEvent>() {
+	
+				@Override
+				public void handle(ActionEvent arg0) {
+					Platform.exit();				
+				}
+	        	
+	        });
+        }
+        
     }
     
-    public void showExportCloseDialog(Window owner) {
+    public void showCloseAlert(Alert.AlertType type, Window owner, String header, String headerMsg) {
+        Alert alert = new Alert(type);
+        alert.setTitle(header);
+        alert.setHeaderText(null);
+        alert.setContentText(headerMsg);
+        alert.initOwner(owner);
+        alert.show();
+        
+
+        
+    }
+    
+    public Boolean showExportCloseDialog(Window owner, NetworkManager network, WindowEvent event) {
     	
-    	ButtonType bChoice1 = new ButtonType("Save", ButtonData.OK_DONE);
-    	ButtonType bChoice2 = new ButtonType("Exit without Save", ButtonData.FINISH);
+    	event.consume();
     	
     	Dialog<String> buttonDialog = new Dialog<String>();
     	
-    	buttonDialog.setTitle("File processed successfully!");
-    	buttonDialog.setHeaderText(null);
-    	buttonDialog.setContentText("Would you like to save the file, or exit without saving?");
-    	buttonDialog.initOwner(owner);
-    	buttonDialog.getDialogPane().getButtonTypes().add(bChoice2);
-    	buttonDialog.getDialogPane().getButtonTypes().add(bChoice1);
-    	buttonDialog.setResultConverter(dialogButton -> {
-    		  if (dialogButton == bChoice1) {
-    		   return "SAVE";
-    		  }
-    		  if (dialogButton == bChoice2) {
-       		   return "EXIT";
-       		  }
-    		  return null;
-    		 });
-    	
-    	buttonDialog.show();
+	    ButtonType bChoice1 = new ButtonType("Save", ButtonData.OK_DONE);
+	    ButtonType bChoice2 = new ButtonType("Exit without Save", ButtonData.FINISH);
+	    
+	    buttonDialog.setTitle("Exiting...");
+	    buttonDialog.setHeaderText(null);
+	    buttonDialog.setContentText("Would you like to save the file, or exit without saving?");
+	    buttonDialog.initOwner(owner);
+	    buttonDialog.getDialogPane().getButtonTypes().add(bChoice1);
+	    buttonDialog.getDialogPane().getButtonTypes().add(bChoice2);
+	    
+	    buttonDialog.show();
     	
     	Button saveButton = (Button) buttonDialog.getDialogPane().lookupButton(bChoice1);
     	Button exitButton = (Button) buttonDialog.getDialogPane().lookupButton(bChoice2);
@@ -60,19 +84,25 @@ public class UIDialog {
     		
 			@Override
 			public void handle(ActionEvent arg0) {
-				if (buttonDialog.getResult() == "SAVE") {
-					//TODO: Save the file. 
-					System.out.println("File saved.");
-				}
-				else if (buttonDialog.getResult().equals("EXIT")) {
-					System.out.println("exit");
-				}
+				showImportExportBox(owner, false, network, true);
 			}
     	});
     	
+    	exitButton.setOnAction(new EventHandler<ActionEvent>() {
+    		
+			@Override
+			public void handle(ActionEvent arg1) {
+				buttonDialog.hide();
+				Platform.exit();
+			}
+    	});
+    	
+    	return false;
     }
     
-    public String showImportExportBox(Window owner, Boolean isImport, NetworkManager network) {
+    public Boolean showImportExportBox(Window owner, Boolean isImport, NetworkManager network, Boolean shouldClose) {
+    	
+    	Boolean success = false;
     	
     	TextInputDialog dialog = new TextInputDialog();
     	
@@ -88,40 +118,33 @@ public class UIDialog {
 			@Override
 			public void handle(ActionEvent arg0) {
 				if (dialog.getResult().isEmpty()) {
-					showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Information Required.","Information required to continue: you need to enter a file path.");
+					showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Information Required.","Information required to continue: you need to enter a file path.", false);
 				}
 				
 				if (!dialog.getResult().isEmpty()) {
 					
-					//@Mckenna:
-					//TODO: Gracefully catch ImportFormatException and display message to user
-					// if file path is invalid or unable to be interpreted by system
-					// then load or export file based on user selection
-					
-					// if (importFormatException):
-					// showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Error","Error");
 					
 					String filepath = dialog.getResult();
-					
-					// TODO: Test the below for import:
+
 					if (isImport) {
 						try {
 							network.importGraph(dialog.getResult());
+							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Success!","The specified file, " + filepath + ", was successfully imported.", false);
 						} catch (IOException e) {
-							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Invalid File Input","The specified file, " + filepath + ", was not found.");
+							showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Invalid File Input","The specified file, " + filepath + ", was not found.", false);
 						} catch (ImportFormatException e) {
-							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Invalid File Format","The specified file, " + filepath + ", had an invalid file format.");
+							showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"Invalid File Format","The specified file, " + filepath + ", had an invalid file format.", false);
 						}
 						//
 					}
-					// TODO: Test the below for export:
+
 					if (!isImport) { // if it's not import, it's export
 						try {
 							network.exportGraph(dialog.getResult());
+							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"Success!","The specified file, " + filepath + ", was successfully exported.", shouldClose);
 						} catch (FileNotFoundException e) {
-							showAlerts(Alert.AlertType.CONFIRMATION, dialog.getOwner(),"File not found","The specified file, " + filepath + ", was not found.");
+							showAlerts(Alert.AlertType.ERROR, dialog.getOwner(),"File not found","The specified file, " + filepath + ", was not found.", false);
 						}
-						showExportCloseDialog(dialog.getOwner());
 					}
 
 				}
@@ -129,7 +152,7 @@ public class UIDialog {
     	});
 
     	dialog.showAndWait();
-    	return dialog.getContentText();
+    	return success;
     }
 	
     public String returnHelpText() {

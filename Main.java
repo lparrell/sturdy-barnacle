@@ -64,6 +64,7 @@ import javafx.scene.text.FontPosture;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.Dialog;
 import javafx.collections.FXCollections;
@@ -359,6 +360,16 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		primaryStage.setTitle(APP_TITLE);
 		primaryStage.setScene(mainScene);
 		primaryStage.show();
+		
+		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+
+			@Override
+			public void handle(WindowEvent event) {
+				uiDialog.showExportCloseDialog(grid.getScene().getWindow(), network, event);
+			}
+			
+		});
+				
 	}
 
 	/**
@@ -371,20 +382,20 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 
 	public void handle(ActionEvent event) {
 		if (event.getSource() == importButton) {
-			String importpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), true, network);
+			Boolean success = uiDialog.showImportExportBox(grid.getScene().getWindow(), true, network, false);
 			userChoices.setAll(network.getAllUsers());
 			totalsLabel.setText(updateTotalsLabel(false));
 			drawGraph();
 		}
 		if (event.getSource() == exportButton) {
-			String exportpath = uiDialog.showImportExportBox(grid.getScene().getWindow(), false, network);
+			Boolean success = uiDialog.showImportExportBox(grid.getScene().getWindow(), false, network, false);
 			totalsLabel.setText(updateTotalsLabel(false));
 		}
 		if (event.getSource() == clearButton) {
 			network.clearGraph();
 			drawGraph();
 			uiDialog.showAlerts(Alert.AlertType.CONFIRMATION, grid.getScene().getWindow(), "Success!",
-					"Success! Social Network Cleared.");
+					"Success! Social Network Cleared.", false);
 			updateText.setText("Social Network Cleared.");
 			userChoices.setAll(network.getAllUsers());
 			totalsLabel.setText(updateTotalsLabel(true));
@@ -392,7 +403,7 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		}
 		if (event.getSource() == helpButton) {
 			uiDialog.showAlerts(Alert.AlertType.INFORMATION, grid.getScene().getWindow(), "How to...",
-					uiDialog.returnHelpText());
+					uiDialog.returnHelpText(), false);
 		}
 		// DEBUG: right now Undo is sort of a garbage pail for debugging, remove all
 		// this when implementing Undo
@@ -617,5 +628,6 @@ public class Main extends Application implements EventHandler<ActionEvent> {
 		return (totalUsers + " Users\n" + totalFriendships + " Friendships\n" + totalConnectedUsers
 				+ " Connected Users");
 	}
+	
 
 }// GUI
